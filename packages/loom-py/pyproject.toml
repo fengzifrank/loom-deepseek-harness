@@ -1,0 +1,15 @@
+# loom-py —— Loom Python 工具桥（Python 侧）。纯标准库零依赖；本阶段不发布
+# 到 PyPI，源码随仓库使用：示例脚本用 sys.path 指向本目录（或 PYTHONPATH 配置）。
+# 运行自测：python -m loom_py.selftest（在本目录或 PYTHONPATH 含本目录时）。
+
+[project]
+name = "loom-py"
+version = "0.1.0"
+description = "Loom Python 工具桥：@tool 装饰器 + stdio JSON Lines 协议 run()（内核保持 TS，Python 成为一等工具作者语言）"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Loom" }]
+keywords = ["loom", "agent", "tool-bridge", "stdio"]
+
+# 纪律：零第三方依赖（pydantic 仅"可用则增强"，不是必需）。
+dependencies = []

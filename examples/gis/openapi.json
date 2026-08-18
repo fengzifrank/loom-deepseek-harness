@@ -1,0 +1,132 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "gis-platform",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4620"
+    }
+  ],
+  "tags": [
+    {
+      "name": "data-analysis",
+      "description": "agent \"data-analysis\" 可见的工具（persona 作用域）"
+    },
+    {
+      "name": "data-governance",
+      "description": "agent \"data-governance\" 可见的工具（persona 作用域）"
+    },
+    {
+      "name": "report-writing",
+      "description": "agent \"report-writing\" 可见的工具（persona 作用域）"
+    }
+  ],
+  "paths": {
+    "/~loom/api/gis_query_land_types": {
+      "get": {
+        "operationId": "gis_query_land_types",
+        "summary": "查询村庄地类面积数据（2022 年土地地类图斑按村庄汇总）。返回每个村庄的地类、图斑面积（平方米）与占全镇面积百分比，按面积从大到小排序。可按村庄名（支持部分匹配）过滤。",
+        "tags": [
+          "data-analysis",
+          "data-governance",
+          "report-writing"
+        ],
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "description": "可选的村庄名过滤词，如\"连河村\"；省略则返回全部 8 个村庄。",
+            "schema": {
+              "type": "string",
+              "description": "可选的村庄名过滤词，如\"连河村\"；省略则返回全部 8 个村庄。"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "工具 gis_query_land_types 的返回值（output DSL 声明的形状）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalAreaSqm": {
+                      "type": "number"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "village": {
+                            "type": "string"
+                          },
+                          "landType": {
+                            "type": "string"
+                          },
+                          "areaSqm": {
+                            "type": "number"
+                          },
+                          "ratioPct": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "village",
+                          "landType",
+                          "areaSqm",
+                          "ratioPct"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "queriedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "totalAreaSqm",
+                    "items",
+                    "queriedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "工具执行失败（策略拒绝/审批超时为 403；此处为 500 形状：{ok:false, error, tool}）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "tool": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "error",
+                    "tool"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

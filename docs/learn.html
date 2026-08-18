@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loom 学习使用指南 — 智能体时代的 Web 框架</title>
+<meta name="description" content="Loom：构建于 DeepSeek Harness 之上的智能体原生 Web 框架。一份声明三张面孔，会话日志即契约，UI 是日志的投影。">
+<style>
+:root{
+  --bg:#0b0f17;--bg2:#0f1522;--card:#141b2b;--card2:#1a2336;
+  --line:#243049;--text:#dbe4f3;--muted:#8a99b5;--accent:#4f8cff;--accent2:#7c5cff;
+  --ok:#3ecf8e;--warn:#f5b455;--err:#f07070;--code-bg:#0d1320;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;line-height:1.75;font-size:16px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.88em;background:var(--code-bg);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:#9ecbff}
+pre{font-family:var(--mono);font-size:13.5px;line-height:1.65;background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:18px 20px;overflow-x:auto;position:relative}
+pre code{background:none;border:none;padding:0;color:#c9d7f0}
+.cm{color:#5d7290}.kw{color:#c792ea}.st{color:#a5e07f}.fn{color:#82aaff}.nu{color:#f78c6c}
+nav{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(11,15,23,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav .inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:4px;padding:0 24px;height:56px;overflow-x:auto;scrollbar-width:none}
+nav .inner::-webkit-scrollbar{display:none}
+nav .logo{font-weight:800;font-size:17px;color:#fff;margin-right:14px;white-space:nowrap}
+nav .logo span{color:var(--accent)}
+nav a{color:var(--muted);font-size:13.5px;padding:6px 10px;border-radius:7px;white-space:nowrap}
+nav a:hover{color:var(--text);background:var(--card);text-decoration:none}
+main{max-width:1080px;margin:0 auto;padding:0 24px}
+section{padding:64px 0 12px;border-bottom:1px dashed var(--line)}
+h2{font-size:27px;margin-bottom:6px;color:#fff}
+h3{font-size:19px;margin:34px 0 12px;color:#fff}
+.lead{color:var(--muted);margin-bottom:26px;font-size:15.5px}
+.hero{padding:120px 0 56px;border-bottom:1px solid var(--line);text-align:center}
+.hero h1{font-size:44px;color:#fff;letter-spacing:-.5px;margin-bottom:14px}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{font-size:18px;color:var(--muted);max-width:720px;margin:0 auto 26px}
+.badges{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:34px}
+.badge{font-size:12.5px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--card)}
+.badge.ok{color:var(--ok);border-color:rgba(62,207,142,.35)}
+.badge.go{color:var(--accent);border-color:rgba(79,140,255,.4)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;margin:20px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+.card h4{color:#fff;font-size:16px;margin-bottom:8px}
+.card p{font-size:14px;color:var(--muted)}
+.card .big{font-size:26px;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px}
+th{background:var(--card2);color:#fff;text-align:left;padding:10px 14px;border:1px solid var(--line);font-weight:600}
+td{padding:10px 14px;border:1px solid var(--line);color:var(--muted);vertical-align:top}
+td:first-child{color:var(--text);white-space:nowrap}
+.tag{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:999px;margin-right:6px;vertical-align:1px}
+.tag.ok{background:rgba(62,207,142,.12);color:var(--ok);border:1px solid rgba(62,207,142,.3)}
+.tag.plan{background:rgba(245,180,85,.1);color:var(--warn);border:1px solid rgba(245,180,85,.3)}
+.copy{position:absolute;top:10px;right:10px;font-size:11.5px;color:var(--muted);background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:3px 10px;cursor:pointer;user-select:none}
+.copy:hover{color:#fff}
+.layers{margin:26px 0;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.layer{display:flex;align-items:stretch}
+.layer .lv{width:64px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;background:var(--card2);border-right:1px solid var(--line);flex-shrink:0}
+.layer .lc{padding:14px 18px;flex:1}
+.layer .lc b{color:#fff;font-size:14.5px}
+.layer .lc span{display:block;font-size:13px;color:var(--muted)}
+.layer+.layer .lv{border-top:1px solid var(--line)}
+.layer+.layer .lc{border-top:1px solid var(--line)}
+.hl{background:rgba(79,140,255,.08)}
+.flow{display:flex;flex-direction:column;gap:0;margin:22px 0}
+.fstep{display:flex;gap:16px;align-items:flex-start;position:relative;padding:0 0 22px 0}
+.fstep::before{content:"";position:absolute;left:15px;top:34px;bottom:0;width:2px;background:var(--line)}
+.fstep:last-child::before{display:none}
+.fstep .n{width:32px;height:32px;border-radius:50%;background:var(--card2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent);flex-shrink:0;z-index:1}
+.fstep .t b{color:#fff;display:block;font-size:14.5px}
+.fstep .t span{font-size:13.5px;color:var(--muted)}
+.note{background:rgba(79,140,255,.07);border:1px solid rgba(79,140,255,.25);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;font-size:14px;color:var(--muted);margin:16px 0}
+.warn{background:rgba(245,180,85,.06);border:1px solid rgba(245,180,85,.25);border-left:3px solid var(--warn);border-radius:8px;padding:12px 16px;font-size:14px;color:var(--muted);margin:16px 0}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}
+summary{cursor:pointer;color:#fff;font-size:15px;font-weight:600}
+details p{font-size:14px;color:var(--muted);margin-top:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}.hero h1{font-size:32px}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.panel h5{color:#fff;font-size:14.5px;margin-bottom:10px}
+.panel li{font-size:13.5px;color:var(--muted);margin:6px 0 6px 18px}
+footer{padding:48px 0 64px;text-align:center;color:var(--muted);font-size:13.5px}
+footer .links{display:flex;gap:22px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+kbd{font-family:var(--mono);font-size:12px;background:var(--card2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 7px}
+</style>
+</head>
+<body>
+
+<nav><div class="inner">
+  <div class="logo">L<span>oom</span></div>
+  <a href="#what">是什么</a><a href="#why">为什么</a><a href="#concepts">核心概念</a><a href="#quickstart">快速开始</a><a href="#first-app">第一个应用</a><a href="#arch">架构</a><a href="#lifecycle">消息的一生</a><a href="#api">API 速查</a><a href="#m2">审批与回放</a><a href="#m4">客户端与评测</a><a href="#interop">互通与 Python</a><a href="#memory">记忆与多用户</a><a href="#faq">FAQ</a><a href="#roadmap">路线图</a>
+</div></nav>
+
+<main>
+
+<!-- ================= HERO ================= -->
+<div class="hero">
+  <h1>智能体时代的 <em>Web 框架</em></h1>
+  <p>一份声明，三张面孔。<b>会话日志即契约</b>，界面是日志的投影。<br>Loom 让你像用 FastAPI 写 API 一样，写出由智能体驱动的 Web 应用。</p>
+  <div class="badges">
+    <span class="badge ok">M1-M8 全量交付 ✅</span><span class="badge ok">326 项测试</span><span class="badge go">构建于 DeepSeek Harness</span><span class="badge">TS 内核 · Python 工具 · 记忆与路径记忆 · 插件生态 · MIT</span>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="big">1 → 3</div><h4>一份声明，三张面孔</h4><p>一次 <code>app.tool()</code> 声明，同时得到模型工具、HTTP API、前端类型化客户端。</p></div>
+    <div class="card"><div class="big">100%</div><h4>可回放、可审计</h4><p>模型看到的一切都落日志：时间旅行调试、审批记录、会话分叉，全部免费获得。</p></div>
+    <div class="card"><div class="big">0 行</div><h4>胶水代码归零</h4><p>路由、SSE、会话管理、persona 注入——框架全包，你只声明业务能力。</p></div>
+  </div>
+</div>
+
+<!-- ================= WHAT ================= -->
+<section id="what">
+  <h2>一、Loom 是什么？</h2>
+  <p class="lead">三十秒版本。</p>
+  <p>传统 Web 框架（FastAPI / Express / Next）的原子是「请求 → 处理 → 响应」。智能体应用需要更大的原子：<b style="color:#fff">持久会话</b>。Loom 把会话事件日志变成应用的唯一事实来源——模型上下文、界面、审计、评测，全部是同一份日志的投影。</p>
+  <div class="grid2">
+    <div class="panel"><h5>❌ 传统「Web + AI」四不像</h5>
+      <ul><li>AI 被关在聊天框里，只会出建议</li><li>改数据要人复制粘贴</li><li>刷新即失忆，无法审计</li><li>地图/图表和 AI 零连接</li></ul>
+    </div>
+    <div class="panel"><h5>✅ Loom 形态</h5>
+      <ul><li>agent 通过<b style="color:var(--ok)">工具</b>直接操作业务数据</li><li>写操作可挂<b style="color:var(--ok)">人工审批</b>闸门</li><li>每个会话可回放、可分叉、可评测</li><li>前端是事件流的实时投影</li></ul>
+    </div>
+  </div>
+  <div class="note">一句话：不是「给 Web 应用加个 AI 功能」，而是<b style="color:var(--text)">让智能体运行时成为应用的操作系统</b>，Web 界面只是它的一个观察窗口。</div>
+</section>
+
+<!-- ================= WHY ================= -->
+<section id="why">
+  <h2>二、为什么需要它？</h2>
+  <p class="lead">request/response 范式的三重断裂，与业界三条独立线索的汇聚。</p>
+  <table>
+    <tr><th>断裂</th><th>传统范式</th><th>智能体应用的真实需求</th></tr>
+    <tr><td>时间尺度</td><td>请求毫秒级生命周期</td><td>一个回合几十秒到几十分钟，含工具执行与人工审批——刷新页面不能杀死任务</td></tr>
+    <tr><td>状态归属</td><td>无状态，状态是应用的附带品</td><td>模型上下文是连续的、必须可完整重建的核心状态</td></tr>
+    <tr><td>权力模型</td><td>auth 回答「谁能调接口」</td><td>要回答「这个具体动作要不要人批准」——工具级、参数级、预算级，且必须留痕</td></tr>
+  </table>
+  <h3>业界三条线索，同一个方向</h3>
+  <div class="cards">
+    <div class="card"><h4>Temporal · 持久执行</h4><p>事件历史 + 确定性重放 = 免费检查点。Loom 的会话日志天生如此，且更严格：模型可见 ⟺ 已落日志。</p></div>
+    <div class="card"><h4>Phoenix LiveView · 服务端状态</h4><p>证明了「UI 不拥有状态、只做投影」。Loom 投影的是带序号的事件流，断线重连 = <code>?since=seq</code> 续传，LiveView 的重连难题自然消失。</p></div>
+    <div class="card"><h4>Generative UI · 工具驱动界面</h4><p>界面动作来自工具调用。Loom 走确定性路线：工具返回结构化数据 + 渲染意图卡片，回放逐像素重现。</p></div>
+  </div>
+</section>
+
+<!-- ================= CONCEPTS ================= -->
+<section id="concepts">
+  <h2>三、核心概念（大白话版）</h2>
+  <p class="lead">六条公理，每条都能在 <a href="whitepaper.zh.md" target="_blank">白皮书</a> 里找到源码级出处。</p>
+  <div class="cards">
+    <div class="card"><h4>1️⃣ 一份声明，三张面孔</h4><p>工具声明 → 模型可调用 + HTTP 端点 + 类型化客户端。像 FastAPI 的装饰器同时给你路由、校验和文档。</p></div>
+    <div class="card"><h4>2️⃣ 会话记录即契约</h4><p>Transcript is the contract。审计、调试、评测、分叉——全是读日志，不需要第二套系统。</p></div>
+    <div class="card"><h4>3️⃣ UI 是投影</h4><p>前端不拥有业务状态。刷新 = 重放，断线 = 按 seq 续传，多端 = 同一日志的多个投影。</p></div>
+    <div class="card"><h4>4️⃣ 能力三件套</h4><p>契约 / 实现 / 消费分离。换模型、换沙箱、换持久化后端，模型侧的契约纹丝不动。</p></div>
+    <div class="card"><h4>5️⃣ 权力走口子</h4><p>干预执行只有固定的拦截点（审批、策略、预算），没有后门；想影响模型看到的内容，唯一通道是写日志。</p></div>
+    <div class="card"><h4>6️⃣ 一切可组合</h4><p>应用 = 一组插件按层序组合，热插拔、无特权内核。站在 DeepSeek Harness 微内核之上。</p></div>
+  </div>
+</section>
+
+<!-- ================= QUICKSTART ================= -->
+<section id="quickstart">
+  <h2>四、快速开始（10 分钟）</h2>
+  <p class="lead">环境要求：Node.js ≥ 24（或 ≥22.13——M7 记忆的 node:sqlite 免 flag 下界）、pnpm、DeepSeek API Key。可选：Python 3.10+（示例的统计工具用；没有 Python 时 <code>pythonTools</code> 为 0，其余功能不受影响）。</p>
+  <h3>1. 安装依赖并构建</h3>
+  <pre><code><span class="cm"># 需要 Node ≥24 与 pnpm（corepack enable 即可）</span>
+git clone &lt;本仓库&gt; loom && cd loom
+pnpm install
+pnpm build:sdk        <span class="cm"># 编译 @loom-sdk/web</span></code><div class="copy">复制</div></pre>
+  <h3>2. 配置 API Key</h3>
+  <pre><code><span class="cm"># 写入 examples/gis/.env</span>
+DEEPSEEK_API_KEY=sk-你的key</code><div class="copy">复制</div></pre>
+  <h3>3. 启动（一条命令）</h3>
+  <pre><code><span class="cm"># 智能体服务（4620）+ Vite 前端（5173）一起拉起；改 loom.app.ts 保存即热重启</span>
+cd examples/gis && pnpm loom dev
+<span class="cm"># 浏览器打开 http://localhost:5173（不想拉前端可加 --no-web）</span></code><div class="copy">复制</div></pre>
+  <p>也可以从零生成一个新应用：<code>pnpm exec loom new my-app</code>（在 <code>examples/gis</code> 目录下执行 <code>pnpm exec loom new ../my-app</code>）——生成 <code>loom.app.ts</code> + 前端骨架，<code>pnpm i &amp;&amp; pnpm loom dev</code> 即可聊天。生产部署：<code>pnpm loom build &amp;&amp; pnpm loom start</code>，dist 页面与 API 同端口。</p>
+  <h3>4. 验证</h3>
+  <pre><code>curl http://127.0.0.1:4620/~loom/health
+<span class="cm"># → {"ok":true,"app":"gis-platform","model":"deepseek-v4-flash",
+#     "agents":[...],"tools":[...],"pythonTools":2,"policy":{...},"httpApi":[...]}</span></code><div class="copy">复制</div></pre>
+  <p>然后在页面选择「数据分析 Agent」，发送：<b style="color:#fff">「查询所有村庄的地类面积占比，画出饼图，并把地图聚焦到面积最大的村」</b>——你会看到 agent 真实调用工具、饼图实时渲染、回答里的每个数字都来自数据文件。装有 Python 时再发一句：<b style="color:#fff">「用 Python 统计各村占比的均值和标准差」</b>——体验 M6 的 Python 工具桥。</p>
+  <div class="warn"><b>常见误区提醒：</b>直接调 OpenAI 兼容接口「假装接入」的方案，模型看到的内容不落日志、无法回放与审计——Loom 的所有价值都建立在「会话日志是唯一事实」之上，请始终通过框架的工具/会话机制扩展。</div>
+</section>
+
+<!-- ================= FIRST APP ================= -->
+<section id="first-app">
+  <h2>五、第一个 Loom 应用（逐行讲解）</h2>
+  <p class="lead">完整示例见 <code>examples/gis/loom.app.ts</code>，以下是精简骨架。</p>
+  <h3>声明工具：一份声明，三张面孔</h3>
+  <pre><code><span class="kw">import</span> z <span class="kw">from</span> <span class="st">'@deepseek-ai/schemastery'</span>
+<span class="kw">import</span> { defineApp } <span class="kw">from</span> <span class="st">'@loom-sdk/web'</span>
+
+<span class="kw">const</span> app = <span class="fn">defineApp</span>(<span class="st">'my-app'</span>, { model: <span class="st">'deepseek-v4-flash'</span> })
+
+<span class="cm">// ① 工具：模型可调用 + ② 自动获得 HTTP 端点 + ③ 前端类型化客户端</span>
+app.<span class="fn">tool</span>(<span class="st">'query_land_types'</span>)
+  .<span class="fn">input</span>({ region: { type: <span class="st">'string'</span>, description: <span class="st">'村庄名（可选）'</span> } })
+  .<span class="fn">output</span>(z.<span class="fn">object</span>({ total: z.<span class="fn">number</span>(), items: z.<span class="fn">array</span>(z.<span class="fn">object</span>({ name: z.<span class="fn">string</span>() })) }))
+  .<span class="fn">card</span>(<span class="st">'generic'</span>, { title: <span class="st">'地类面积查询'</span> })   <span class="cm">// UI 渲染意图</span>
+  .<span class="fn">http</span>(<span class="st">'GET'</span>)                              <span class="cm">// → GET /~loom/api/query_land_types</span>
+  .<span class="fn">execute</span>(<span class="kw">async</span> (args, exec) =&gt; {
+    <span class="cm">// args.region 的类型由 input 字面量推导（string | undefined），内核已校验——</span>
+    <span class="cm">// 不再需要手工 typeof 检查；output 写 z.object，required 由可选性推导。</span>
+    <span class="kw">return</span> landTypes.<span class="fn">query</span>(args.region)   <span class="cm">// 只返回 canonical JSON</span>
+  })</code><div class="copy">复制</div></pre>
+  <h3>声明智能体：声明即路由</h3>
+  <pre><code>app.<span class="fn">agent</span>(<span class="st">'data-analyst'</span>, {
+  persona: <span class="st">'数据分析数字员工：先查数再结论，主动画图与聚焦地图'</span>,
+  tools: [queryLandTypes, renderPieChart, focusMap],
+})
+
+<span class="cm">// 自动获得：</span>
+<span class="cm">//   POST /~loom/agents/data-analyst/sessions          → 创建会话</span>
+<span class="cm">//   POST /~loom/agents/data-analyst/sessions/:id/messages → 发消息</span>
+<span class="cm">//   GET  /~loom/agents/data-analyst/sessions/:id/events   → SSE 直播</span>
+<span class="cm">//   POST /~loom/agents/data-analyst/sessions/:id/fork     → 从任意时刻分叉</span></code><div class="copy">复制</div></pre>
+  <h3>声明策略：写操作要审批</h3>
+  <pre><code>app.<span class="fn">policy</span>({
+  default: <span class="st">'allow'</span>,
+  rules: [
+    { tool: <span class="st">'*_update_*'</span>, effect: <span class="st">'approve'</span> },  <span class="cm">// 写操作 → 浏览器弹审批卡</span>
+    { tool: <span class="st">'*_query_*'</span>, effect: <span class="st">'allow'</span>  },  <span class="cm">// 只读放行</span>
+  ],
+})
+
+<span class="kw">export default</span> app   <span class="cm">// pnpm loom dev 即可运行</span></code><div class="copy">复制</div></pre>
+  <h3>前端：三个 Hook 接管界面</h3>
+  <pre><code><span class="kw">import</span> { useAgentSession, useProjection } <span class="kw">from</span> <span class="st">'@loom-sdk/web/react'</span>
+
+<span class="kw">const</span> { send, messages, status } = <span class="fn">useAgentSession</span>(<span class="st">'data-analyst'</span>)
+<span class="cm">// messages: 文本气泡 + 工具卡片自动混合；status: 运行状态</span>
+
+<span class="kw">const</span> workspace = <span class="fn">useProjection</span>(sessionId, <span class="st">'workspace'</span>)
+<span class="cm">// 把会话事件折叠成应用状态：图表数据、地图聚焦、任务列表…</span></code><div class="copy">复制</div></pre>
+</section>
+
+<!-- ================= ARCH ================= -->
+<section id="arch">
+  <h2>六、五层架构</h2>
+  <p class="lead">Loom 不与 DeepSeek Harness 并排造轮子——它站在内核之上，只补声明式体验层。</p>
+  <div class="layers">
+    <div class="layer"><div class="lv">L5</div><div class="lc"><b>你的应用</b><span>业务工具 · persona · 投影 · 页面（如 examples/gis）</span></div></div>
+    <div class="layer hl"><div class="lv">L4</div><div class="lc"><b>投影与客户端层</b><span>useAgentSession · useProjection · SSE 协议（seq/since/白名单）· 类型化客户端</span></div></div>
+    <div class="layer hl"><div class="lv">L3</div><div class="lc"><b>声明层（Loom 本体）</b><span>defineApp · tool · agent · projection · policy · http —— 声明编译为插件与路由</span></div></div>
+    <div class="layer"><div class="lv">L2</div><div class="lc"><b>DeepSeek Harness 内核</b><span>会话日志 · agent-loop · 工具管线 · LLM 适配 · 审批/权限 · 多智能体 · 持久化</span></div></div>
+    <div class="layer"><div class="lv">L1</div><div class="lc"><b>Cordis 框架基座</b><span>IoC + 类型化事件 + 可逆效果（注册即资源，卸载即回收）</span></div></div>
+  </div>
+  <div class="note">依赖铁律：Loom 只依赖内核的 <b>Service Definitions</b>（ctx.tools / ctx.agents / ctx.webServer…），永不绑定具体实现——所以模型、沙箱、持久化后端随时可换。</div>
+</section>
+
+<!-- ================= LIFECYCLE ================= -->
+<section id="lifecycle">
+  <h2>七、一条消息的一生</h2>
+  <p class="lead">理解这个流程，就理解了 Loom 的一切。</p>
+  <div class="flow">
+    <div class="fstep"><div class="n">1</div><div class="t"><b>你说了一句话</b><span>前端 POST 到 <code>/~loom/agents/data-analyst/sessions/:id/messages</code>——前端只是传话筒</span></div></div>
+    <div class="fstep"><div class="n">2</div><div class="t"><b>进入会话收件箱</b><span>消息作为事件写进 append-only 会话日志，永不丢失</span></div></div>
+    <div class="fstep"><div class="n">3</div><div class="t"><b>agent 开回合</b><span>上下文从日志现算（deriveMessages）→ 打给模型 → 模型决定调用哪些工具</span></div></div>
+    <div class="fstep"><div class="n">4</div><div class="t"><b>工具经过策略口子</b><span>allow 放行 · deny 拒绝 · approve 弹审批卡等人工裁决（超时即拒绝，fail-closed）</span></div></div>
+    <div class="fstep"><div class="n">5</div><div class="t"><b>结果回写日志</b><span>工具结果以带序号（seq）的事件落盘——这是唯一事实</span></div></div>
+    <div class="fstep"><div class="n">6</div><div class="t"><b>前端实时投影</b><span>SSE 直播线上每来一条事件，聊天流/饼图/地图/任务面板各自认领自己关心的</span></div></div>
+    <div class="fstep"><div class="n">7</div><div class="t"><b>回合结束，一切可回放</b><span>任意时刻拖动调试滑块回到任意 seq，或从该点分叉出新会话</span></div></div>
+  </div>
+</section>
+
+<!-- ================= API ================= -->
+<section id="api">
+  <h2>八、API 速查表</h2>
+  <p class="lead">声明器（服务端）与 Hook（前端）。</p>
+  <table>
+    <tr><th>API</th><th>作用</th><th>说明</th></tr>
+    <tr><td><code>defineApp(name, opts)</code></td><td>定义应用</td><td>默认模型、持久化方式；导出后 <code>loom dev</code> 一键运行</td></tr>
+    <tr><td><code>app.tool(name)</code></td><td>声明工具</td><td>链式：<code>.input() .output() .card() .http() .execute()</code>；execute 只返回 canonical JSON</td></tr>
+    <tr><td><code>app.agent(id, spec)</code></td><td>声明智能体</td><td>persona + 工具集 + 策略；自动获得 sessions/messages/events/fork 路由</td></tr>
+    <tr><td><code>app.projection(name, {init, apply})</code></td><td>声明投影</td><td>纯函数把会话事件折叠为应用状态，前端 <code>useProjection</code> 消费</td></tr>
+    <tr><td><code>app.policy({default, rules})</code></td><td>声明策略</td><td>glob 匹配工具名 → allow / deny / approve；approve 走审批闭环</td></tr>
+    <tr><td><code>app.python({ command, cwd?, env?, restartLimit?, callTimeoutMs? })</code></td><td>Python 工具桥（M6）</td><td>spawn Python 子进程（<code>@tool</code> 清单 + <code>run()</code>）握手后注册为模型可见代理工具；类型注解自动推断 JSON Schema；崩溃自动重启（上限 3 fail-loud）——见 <a href="docs/python-tools.zh.md">Python 工具指南</a></td></tr>
+    <tr><td><code>app.auth({ mode?, corsOrigins? })</code></td><td>声明认证（M7）</td><td>匿名 UUID（<code>x-loom-user</code>，拒绝 <code>user-</code> 前缀——本地账号保留命名空间）+ 本地账号（register/login，scrypt + HMAC token，零依赖）；无身份 POST 401、会话按 userId 隔离、SSE 支持 <code>?token=</code>/<code>?user=</code>；可选 CORS 白名单——见 <a href="docs/auth.zh.md">认证指南</a></td></tr>
+    <tr><td><code>app.memory({ extraction?, recall? })</code></td><td>声明 loom memory（M7）</td><td>提取默认关（花 token）、召回默认开（topK=5）；agent 级 <code>app.agent(id, { memory: true })</code> 显式开启；mem0 式两阶段提取 + FTS top-K 召回注入（防注入框）——见 <a href="docs/memory.zh.md">记忆指南</a></td></tr>
+    <tr><td><code>useLoomAuth()</code> / <code>useAgentSession(agentId, { identity })</code></td><td>前端身份与会话持久化</td><td>匿名 UUID 自动生成、登录注册登出（<code>AuthPanel</code>）；会话 id 存 localStorage，刷新自动重连重放；<code>SessionList</code> 列历史会话（继续/新建）；<code>MemoryPanel</code> 搜索/编辑/删除记忆</td></tr>
+    <tr><td><code>useAgentSession(agentId)</code></td><td>前端会话</td><td>懒建会话、send()、messages（文本+工具卡片）、status</td></tr>
+    <tr><td><code>useProjection(sessionId, name)</code></td><td>前端投影</td><td>订阅 SSE 并在浏览器折叠为应用状态；断线按 seq 去重续传</td></tr>
+  </table>
+  <h3>HTTP 面（自动生成）</h3>
+  <table>
+    <tr><th>端点</th><th>方法</th><th>作用</th></tr>
+    <tr><td><code>/~loom/health</code></td><td>GET</td><td>应用自描述：agents/tools/policy/httpApi 全景</td></tr>
+    <tr><td><code>/~loom/agents/:id/sessions</code></td><td>POST</td><td>创建会话（声明 auth 后需身份）</td></tr>
+    <tr><td><code>/~loom/agents/:id/sessions</code></td><td>GET</td><td>M7：该 agent 的会话列表（sidecar 索引；带身份只看自己的；title=首条用户消息前 30 字）</td></tr>
+    <tr><td><code>.../sessions/:sid/messages</code></td><td>POST</td><td>发送用户消息（请求体上限 2 MiB，超限 413）</td></tr>
+    <tr><td><code>.../sessions/:sid/events?since=&amp;to=</code></td><td>GET</td><td>SSE 直播 / 有界区间回放</td></tr>
+    <tr><td><code>.../sessions/:sid/approvals/:aid</code></td><td>POST</td><td>审批裁决（allowed-once / rejected）；SSE 重连后未决审批卡按原 approvalId 幂等重发；并发答复只认第一次（后到 409）</td></tr>
+    <tr><td><code>.../sessions/:sid/fork</code></td><td>POST</td><td>从指定 seq 分叉（须为 turn 边界）</td></tr>
+    <tr><td><code>/~loom/api/&lt;tool&gt;</code></td><td>声明指定</td><td>工具的 HTTP 面孔，走完整管线（策略/校验生效）</td></tr>
+    <tr><td><code>/~loom/openapi.json</code></td><td>GET</td><td>运行时活文档（OpenAPI 3.1.0，与 <code>loom openapi</code> 生成物同源）</td></tr>
+    <tr><td><code>/~loom/health</code> 的 <code>pythonTools</code></td><td>GET</td><td>M6：已注册的 Python 工具计数（声明了 <code>app.python</code> 时出现）</td></tr>
+    <tr><td><code>/~loom/auth/register · login · me</code></td><td>POST/GET</td><td>M7：本地账号（注册即登录返回 token，7 天有效；me 验 token）</td></tr>
+    <tr><td><code>/~loom/memories[?query=] · /:id</code></td><td>GET/PUT/DELETE</td><td>M7：当前用户的记忆（FTS 搜索 / 编辑 / 软删；需身份，按 userId 隔离）</td></tr>
+  </table>
+  <h3>CLI 互通命令（M5）</h3>
+  <table>
+    <tr><th>命令</th><th>作用</th><th>说明</th></tr>
+    <tr><td><code>loom openapi [entry] [-o openapi.json]</code></td><td>导出 OpenAPI 3.1.0</td><td>确定性文档（同一声明字节相同）；无 <code>-o</code> 打印 stdout；复杂 query 值标 <code>x-loom-query-json</code> 扩展；CI 对生成物 <code>git diff --exit-code</code></td></tr>
+    <tr><td><code>loom import-openapi &lt;url|file&gt; [-o loom.openapi.ts] [--base] [--include glob] [--tag]</code></td><td>导入 OpenAPI 生成工具</td><td>生成 <code>registerImportedTools(app)</code> 一行接入；$ref 展开/allOf 合并，覆盖不了的部分诚实降级 json + WARN 注释；写操作给 policy approve 建议</td></tr>
+  </table>
+</section>
+
+<!-- ================= M2 ================= -->
+<section id="m2">
+  <h2>九、进阶：审批治理与时间旅行</h2>
+  <p class="lead">这两组能力是 Loom 区别于「聊天 SDK」的分水岭。</p>
+  <h3>审批闭环（fail-closed）</h3>
+  <p>写类工具声明为 <code>approve</code> 后：模型调用 → 策略口子拦截 → SSE 推送审批卡片到页面 → 人点「允许/拒绝」→ 工具继续或失败。<b style="color:#fff">无人应答 5 分钟自动拒绝</b>；每次裁决都有审计记录。</p>
+  <h3>时间旅行调试器</h3>
+  <p>页面的「回放调试」面板：完整事件流列表 + 滑块定位任意 seq + 该时刻的应用状态快照 +「从此点分叉」生成新会话。<b style="color:#fff">线上出问题，拖回去看当时模型看到了什么</b>——因为请求可从日志逐字节重建，这不是模拟，是事实重放。</p>
+  <div class="note">试试：先正常跑一次分析，然后打开调试面板拖到第一个 <code>tool/call</code> 之前——你会看到饼图"缩回"未渲染状态，因为投影是纯函数，给它哪个区间的事件，它就呈现哪个时刻的世界。</div>
+</section>
+
+<!-- ================= M4: CLIENT & EVALS ================= -->
+<section id="m4">
+  <h2>十、类型化客户端与评测</h2>
+  <p class="lead">第三张面孔长出代码，真实会话日志变成回归测试集——M4 收官路线图。</p>
+  <h3>loom client：生成物即前端 SDK</h3>
+  <p><code>pnpm loom client</code> 读取应用声明，生成 <code>src/loom.client.ts</code>（自动生成，勿手改）：工具函数的入参类型来自 <code>InferToolArgs</code>、返回类型来自 <code>InferToolOutput</code>——改声明后重新生成，所有调用点在<b style="color:#fff">编译期</b>报错；agent id 是字面量联合类型，拼错即红；<code>streamEvents</code> 把 SSE 包成 <code>AsyncIterable</code>。</p>
+  <pre><code><span class="cm">// src/loom.client.ts（pnpm loom client 生成，勿手改）</span>
+<span class="kw">export type</span> <span class="fn">GisQueryLandTypesArgs</span> = <span class="fn">InferToolArgs</span>&lt;{ region: { type: <span class="st">'string'</span>, … } }&gt;
+<span class="kw">export type</span> <span class="fn">GisQueryLandTypesOutput</span> = <span class="fn">InferToolOutput</span>&lt;{ … totalAreaSqm: number; items: Array&lt;{…}&gt; … }&gt;
+
+<span class="kw">export const</span> loomTools = {
+  <span class="cm">/** GET /~loom/api/gis_query_land_types */</span>
+  <span class="kw">async</span> <span class="fn">gis_query_land_types</span>(args: GisQueryLandTypesArgs = {}): <span class="kw">Promise</span>&lt;GisQueryLandTypesOutput&gt; { … },
+}
+<span class="cm">// 调用端全程有类型：region?: string；返回 totalAreaSqm: number（真实值 57351531.17）</span>
+<span class="kw">const</span> r = <span class="kw">await</span> loomTools.<span class="fn">gis_query_land_types</span>({ region: <span class="st">'连河村'</span> })</code><div class="copy">复制</div></pre>
+  <h3>loom eval：transcript 即评测集</h3>
+  <p>真实跑出的会话日志就是评测夹具：<code>loom eval --slim &lt;session.jsonl&gt;</code> 把日志折叠成精简夹具（assistant/chunk 增量折叠、turn/tool/approval 原样保留），<code>evals/*.eval.ts</code> 里声明断言，<code>pnpm eval:gis</code> 纯本地重放——零网络、零 key。</p>
+  <pre><code><span class="cm">// evals/approval-allowed.eval.ts（对真实会话日志的纯重放断言）</span>
+<span class="kw">export default</span> <span class="fn">defineEval</span>({
+  name: <span class="st">'approval-allowed'</span>,
+  fixture: <span class="st">'fixtures/approval-allowed.jsonl'</span>,  <span class="cm">// 真实审批链日志的精简投影</span>
+  assert(ev) {
+    ev.expect.<span class="fn">toolCalled</span>(<span class="st">'gis_update_land_note'</span>)
+    <span class="kw">const</span> flow = ev.expect.<span class="fn">approvalFlow</span>()          <span class="cm">// asked → decided 顺序</span>
+    <span class="kw">if</span> (flow.outcome !== <span class="st">'allowed-once'</span>) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="st">'…'</span>)
+    ev.expect.<span class="fn">turnEnded</span>(<span class="st">'completed'</span>)
+  },
+})</code><div class="copy">复制</div></pre>
+  <div class="note">价值一句话：CI 里零网络、零 key 地重放真实智能体行为——审批闭环、委派链、webhook 入口的行为回归从此免费，评测集还随真实使用自动生长；配 <code>loom client</code> 新鲜度门（生成后 <code>git diff --exit-code</code>），声明与生成物永不漂移。</div>
+</section>
+
+<!-- ================= INTEROP ================= -->
+<section id="interop">
+  <h2>十一、双轨互通与 Python 工具桥</h2>
+  <p class="lead">新建的应用用 Loom 声明（绿地方场）；已有的服务和 Python 团队也从正门进来（棕地方场）——两条路共享同一个会话日志内核。</p>
+
+  <h3>存量路：把现有 FastAPI 服务变成 agent 工具</h3>
+  <p>FastAPI 天生自带 <code>/openapi.json</code>。一条命令把它变成 Loom 工具声明，<b style="color:#fff">外部 API 立即获得模型面孔 + 策略/审批治理</b>：</p>
+  <pre><code>loom import-openapi http://127.0.0.1:8000/openapi.json --base http://127.0.0.1:8000
+<span class="cm"># 生成 loom.openapi.ts：每个 API 操作 → 一个工具（真 fetch 的 execute），
+# $ref 展开 / allOf 合并；覆盖不了的 schema 诚实降级并留 WARN 注释；
+# 写操作（POST/PUT/DELETE）自动附上"建议配 approve"注释</span>
+
+<span class="cm"># 然后在 loom.app.ts 里一行接入：</span>
+registerImportedTools(app)</code><div class="copy">复制</div></pre>
+
+  <h3>新建路：把 Loom 应用交付给整个 OpenAPI 生态</h3>
+  <p>反方向也通：声明过 <code>.http()</code> 的工具自动获得确定性 OpenAPI 3.1.0 文档——Swagger、网关、其他 agent 框架、任意代码生成器都能直接消费，而且<b style="color:#fff">运行时还有一份永不漂移的活文档</b>：</p>
+  <pre><code>loom openapi -o openapi.json      <span class="cm"># 离线生成（CI 用 git diff 守门）</span>
+curl http://127.0.0.1:4620/~loom/openapi.json   <span class="cm"># 运行时活文档，与生成物逐字节一致</span></code><div class="copy">复制</div></pre>
+
+  <h3>Python 工具桥：业务逻辑用母语写</h3>
+  <p>内核保持 TypeScript，<b style="color:#fff">Python 成为一等工具作者语言</b>——数据科学、GIS 分析、ML 推理这些 Python 的主场，现在直接写 Python：</p>
+  <pre><code><span class="cm"># py_tools.py —— 装饰器 + 类型注解，schema 自动推断，零依赖纯标准库</span>
+from loom_py import tool, run
+
+@tool(description="统计各村地类占比的均值与标准差")
+def gis_area_stats(precision: int = 2) -&gt; dict:
+    import statistics
+    ...  <span class="cm"># 读取数据、计算，返回 dict 即 canonical JSON</span>
+
+run()   <span class="cm"># 进入 stdio 协议主循环</span></code><div class="copy">复制</div></pre>
+  <pre><code><span class="cm">// loom.app.ts —— 一行声明，清单握手后注册为模型可见的代理工具</span>
+app.python({ command: 'python py_tools.py' })</code><div class="copy">复制</div></pre>
+  <p>实测效果（真实 SSE 事件流）：模型调用 <code>gis_area_stats</code> → Python 算出 <code>meanRatioPct: 5.31, stdRatioPct: 3.83</code> → 助手引用这些数字作答 → <code>turn/end completed</code>。<b style="color:#fff">审批在转发前的 TS 管线里生效、调用与结果照落会话日志</b>——两种语言，同一套治理与回放。进程崩溃自动重启（上限 3 次 fail-loud），<code>python -m loom_py.selftest</code> 一条命令自检。</p>
+  <div class="note">一句话总结双轨：<b style="color:var(--text)">TS 写框架与前端，Python 写工具，存量 FastAPI 走 OpenAPI 进来——三大开发者群体，共享同一个会话日志内核。</b>Python 完整指南见 <a href="python-tools.zh.md" target="_blank">docs/python-tools.zh.md</a>。</div>
+  <p style="color:var(--muted);font-size:14px">连文档都没有、甚至只剩数据库的老系统也接得进来：离线三路示例（一键导入 / 手写包装 / 只读直连库 + 下单审批 + 库存真实扣减）见仓库 <a href="../examples/legacy-erp/README.zh.md" target="_blank">examples/legacy-erp</a>；真实老系统对接实录（开源项目 FastapiAdmin 原样跑起来接进 Loom：OpenAPI 导入 + JWT 登录桥 + 审批写操作，老系统一行不改）见 <a href="../examples/fastapi-admin/README.zh.md" target="_blank">examples/fastapi-admin</a>。</p>
+</section>
+
+<!-- ================= MEMORY ================= -->
+<section id="memory">
+  <h2>十二、记忆、多用户与路径记忆</h2>
+  <p class="lead">框架的三块"产品级"能力：跨会话不失忆、多人互不干扰、失败时能召回历史成功路径。</p>
+
+  <h3>记忆系统：三层结构（M7）</h3>
+  <table>
+    <tr><th>层</th><th>是什么</th><th>入口</th></tr>
+    <tr><td>会话内记忆</td><td>会话日志 + 压缩（compaction）+ 持久化——重启可恢复、可分叉</td><td>内核原生</td></tr>
+    <tr><td>跨会话语义记忆</td><td>mem0 式两阶段（提取 → ADD/UPDATE/DELETE/NOOP 决策）+ SQLite FTS5 检索，按用户隔离</td><td><code>app.memory()</code></td></tr>
+    <tr><td>路径记忆</td><td>带验证的执行序列——失败时召回重用（见下）</td><td><code>memory: { paths: true }</code></td></tr>
+  </table>
+  <pre><code>app.memory({ extraction: { maxPerTurn: 3 }, recall: { topK: 5 } })
+app.agent('data-analyst', { memory: true, ... })   <span class="cm">// 提取花 token，默认关、显式开</span></code><div class="copy">复制</div></pre>
+  <p>实测闭环：告诉 agent"请记住我偏好中文报告、单位用万亩"→ 回合结束自动提取落库 → <b style="color:#fff">新开会话</b>问偏好 → 历史记忆以 <code>form:'recall'</code> 事件注入 → 回答带着偏好。前端有 <b>MemoryPanel</b>（搜索/编辑/删除），模型也有 <code>memory_search / memory_write / memory_forget</code> 工具（走策略管线，forget 可配审批）。</p>
+
+  <h3>多用户：匿名 + 本地账号（M7）</h3>
+  <p>默认双模式：<b style="color:#fff">匿名</b>（浏览器自动生成 UUID，零门槛）+ <b style="color:#fff">本地账号</b>（用户名密码，scrypt 哈希 + HMAC token，零依赖）。会话、审批、记忆全部按用户隔离——别人的会话连"存在"都不会泄露（404）。前端一个 hook 搞定：</p>
+  <pre><code><span class="kw">const</span> { user, login, register } = <span class="fn">useLoomAuth</span>()</code><div class="copy">复制</div></pre>
+
+  <h3>路径记忆：走通过的人留下路（M8）</h3>
+  <p>语义记忆记"事实"，记不住"怎么做成过一件事"。路径记忆补这一层——一个带工具图签名的执行序列，<b style="color:#fff">失败时自动召回</b>：</p>
+  <div class="flow">
+    <div class="fstep"><div class="n">1</div><div class="t"><b>任务失败</b><span>turn/end error/blocked 触发（只有 paths:true 的 agent 才积累路径）</span></div></div>
+    <div class="fstep"><div class="n">2</div><div class="t"><b>检索历史路径</b><span>FTS 按任务目标命中同用户的历史成功路径（含被拒路径，降权）</span></div></div>
+    <div class="fstep"><div class="n">3</div><div class="t"><b>注入"待重验路径"</b><span>防注入框明示：先重跑只读步骤验证数据仍在，才可复用</span></div></div>
+    <div class="fstep"><div class="n">4</div><div class="t"><b>重验回写</b><span>成功 confidence +0.1、verified_at 刷新；失败 ×0.5；连续失败软删——路径会"风化"</span></div></div>
+  </div>
+  <div class="note">这是"能量竞争"的最小实现：新路径与旧路径按验证新鲜度竞争，无人维护的路自动荒废。设计细节见 <a href="path-memory.zh.md" target="_blank">docs/path-memory.zh.md</a>，记忆全景见 <a href="memory.zh.md" target="_blank">docs/memory.zh.md</a>，多用户见 <a href="auth.zh.md" target="_blank">docs/auth.zh.md</a>。</div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section id="faq">
+  <h2>十三、FAQ</h2>
+  <details open><summary>Loom 和「把 Web 服务写成插件给 harness 用」是一回事吗？</summary><p>方向对一半。精确说：<b>独立的 Web 服务层消失了</b>——它的执行职责（业务逻辑）内化为 harness 插件（工具/智能体），对外职责由 webserver 与自动生成的路由承担，页面职责交给前端投影。harness 不是你接入的平台，而是应用 rewritten 之后的操作系统。</p></details>
+  <details><summary>和 Vercel AI SDK / Mastra / LangGraph 什么关系？</summary><p>它们分别解决「渲染流」「跑 agent」「图编排」。Loom 解决的是<b>以 agent 为中枢构建整个 Web 应用</b>：持久会话、审批治理、投影协议、声明式三面孔。底层执行与事务性由 DeepSeek Harness 内核提供，可与其他框架的能力互补而非互斥。</p></details>
+  <details><summary>必须用 DeepSeek 的模型吗？</summary><p>不。内核的 LLM 层是适配器体系（OpenAI 兼容、Anthropic 等多协议），换 provider 不改一行应用代码。示例默认 deepseek-v4-flash 是因为性价比。</p></details>
+  <details><summary>我的前端必须用 React 吗？</summary><p>不。前端与框架之间是纯协议（HTTP + SSE），官方提供 React hooks 参考实现；Vue/Svelte/原生 JS 都能接。</p></details>
+  <details><summary>有记忆系统吗？多个用户怎么隔离？</summary><p><b>M7 起有了，而且是声明式的。</b>三件事一起交付：① <b>重启不失忆</b>——会话登记在 sidecar 索引，服务重启后同 sessionId 惰性 resume，历史完整重放、直接续聊；② <b>多用户</b>——<code>app.auth()</code> 一行声明，匿名 UUID 即开即用，本地账号注册/登录（scrypt + HMAC token，零第三方依赖），会话与记忆按 userId 隔离（他人的 → 404 不泄露存在性），审批仅属主；③ <b>loom memory</b>——<code>app.memory()</code> + agent 级 <code>memory: true</code>（提取花 token，默认关）：每个完成的 turn 后两阶段提取（候选 → 对照 FTS 相似 → ADD/UPDATE/DELETE/NOOP，mem0 v2 风格），会话首条消息时 FTS top-K 召回注入（防注入框 + <code>form:'recall'</code>）；存储是 <code>.loom/memory.db</code>（node:sqlite FTS5，零新依赖，中文 bigram 分词），另有 memory_search/write/forget 三个模型工具与记忆面板。不想用内置的？mem0 经 Python 桥、外部 MCP 记忆服务、内核 session-query 全历史检索三条适配配方见 <a href="memory.zh.md" target="_blank">docs/memory.zh.md</a>；认证细节与生产反代建议见 <a href="auth.zh.md" target="_blank">docs/auth.zh.md</a>。</p></details>
+  <details><summary>审批卡刷新页面就丢了？</summary><p>当前版本未决审批在超时后自动拒绝（fail-closed），不丢安全性只丢便利性；持久化审批队列在路线图中。</p></details>
+  <details><summary>已有 FastAPI 服务怎么接入？</summary><p>两条路，都走 OpenAPI。① <b>把 FastAPI 的 API 变成 Loom 工具</b>：FastAPI 自带 <code>/openapi.json</code>，<code>loom import-openapi http://127.0.0.1:8000/openapi.json --base http://127.0.0.1:8000</code> 生成 <code>loom.openapi.ts</code>，在 loom.app.ts 里一行 <code>registerImportedTools(app)</code>——外部 API 立即获得模型面孔 + 策略/审批（写操作自动获得 approve 建议）。② <b>把 Loom 应用交付给 OpenAPI 生态</b>：<code>loom openapi</code> 导出确定性 OpenAPI 3.1.0 文档（或直接消费运行时 <code>GET /~loom/openapi.json</code>），任何代码生成器/网关都能接。导入侧诚实降级：Loom DSL 覆盖不了的 schema 部分降级为 json 并留 <code>// WARN(openapi-import)</code> 注释，绝不静默出错。</p></details>
+  <details><summary>企业老系统怎么接入？</summary><p>按"老系统还剩什么"分三路，可以混用。① <b>有 OpenAPI 文档</b>：一条 <code>loom import-openapi &lt;url&gt; --base &lt;url&gt;</code> 生成工具声明，loom.app.ts 里一行 <code>registerImportedTools(app)</code>——模型面孔 + HTTP 面孔 + 策略/审批白得；文档覆盖不了的 schema 部分诚实降级并留 <code>// WARN(openapi-import)</code> 注释，绝不静默出错。② <b>接口在跑但没写进文档</b>：手写一个十几行的包装工具（fetch + 注入认证 + 如实声明 output），治理与回放照常生效。③ <b>连 API 都没有、只剩数据库</b>：用 node:sqlite 以 <code>readOnly: true</code> 直连老库做对账审计（框架要求 Node ≥22.13，node:sqlite 免 flag）。写操作（如下单）在 policy 里配 <code>approve</code> 即得人工审批卡——真实改老系统数据，被拒不编造成功，全程落会话日志可回放。完整示例见仓库 <a href="../examples/legacy-erp/README.zh.md" target="_blank">examples/legacy-erp</a>（含决策表、启动步骤与演示话术）。</p></details>
+  <details><summary>有真实老系统的对接案例吗？</summary><p>有，而且是双案例。① <b>真实项目实录</b>（<a href="../examples/fastapi-admin/README.zh.md" target="_blank">examples/fastapi-admin</a>）：开源项目 FastapiAdmin（1k★，FastAPI + SQLAlchemy + Redis 的企业后台）在本机原样跑起来，一行不改接进 Loom——<code>loom import-openapi</code> 从它的 <code>/openapi.json</code> 生成 15 个用户域工具（诚实降级 493 条 WARN），JWT 登录用一个 fetch 包装桥接（token 过期模型自动 <code>legacy_relogin</code> 自愈，无需重启），创建/修改/删除用户全部走审批卡真实落库；这次对接还反过来修了框架：FastAPI 的 <code>Optional[X]</code> 可空联合（<code>anyOf:[T,null]</code>）从降级改为忠实转换。② <b>离线模拟</b>（<a href="../examples/legacy-erp/README.zh.md" target="_blank">examples/legacy-erp</a>）：模拟 2018 ERP 覆盖第三路（只读直连库），CI 里随时可跑。真实案例讲"活系统怎么接"，离线案例讲"三路全走一遍"。</p></details>
+  <details><summary>业务逻辑想用 Python 写怎么办？</summary><p>用 <b>Python 工具桥</b>（M6）：内核保持 TypeScript，Python 成为一等工具作者语言。写一个普通 Python 脚本（如 <code>py_tools.py</code>），用 <code>@tool</code> 装饰器声明工具（类型注解自动推断 JSON Schema，pydantic 可用则增强），末尾 <code>run()</code> 进入 stdio 协议主循环；loom.app.ts 里一行 <code>app.python({ command: 'python py_tools.py' })</code> 把清单注册为模型可见的代理工具——策略/审批照常生效。异常转结构化错误（模型可自行纠正），进程崩溃自动重启（上限 3 次 fail-loud），<code>loom_py</code> 包纯标准库零依赖（<code>python -m loom_py.selftest</code> 自测）。注意两点：工具函数里 <code>print</code> 会污染协议（调试写 stderr）；v1 只有模型面孔（无 .http()/客户端生成）。完整指南见 <a href="python-tools.zh.md" target="_blank">docs/python-tools.zh.md</a>。</p></details>
+  <details><summary>Windows 能开发吗？</summary><p>能。本项目的参考应用就是在 Windows 上开发验证的。需要 Node ≥24 与 pnpm（<code>corepack enable</code>）；Python 工具桥另需 Python 3.10+（<code>loom_py.run()</code> 已强制 UTF-8 管道，中文往返无损）。</p></details>
+  <details><summary>Loom 与 dsh-plugin 生态什么关系？</summary><p><b>既是消费者，也是生产者（M8 起）。</b>消费侧：Loom 的组合直接用内核官方插件——会话历史查询（dsh-session-query-sqlite + dsh-tool-session-query，模型能真实调用 session_search 翻自己的历史会话）、生产静态服务（dsh-host-frontend-static，<code>loom start</code> 的同端口 SPA fallback，替代了早期手写实现）。生产侧：两个原内嵌能力抽成了独立插件包——<code>dsh-python-tools</code>（Python 工具桥，任何 harness 应用都能用，不必装 Loom）与 <code>dsh-web-approval-answerer</code>（SSE 审批 answerer：审批卡推送/断线重发/并发 409/超时 fail-closed）。生态扫描结论：记忆与 Python 桥、人审 answerer 均无同构现成件，这两包各自填补空白。供应链纪律：所有 <code>@deepseek-ai/*</code> 依赖钉精确版本（npm latest tag 普遍指向旧版 0.0.1-rc.x，浮动解析会静默降级）；升级必须整批同升 + 全量 e2e。详见 <a href="plugin-ecosystem.zh.md" target="_blank">docs/plugin-ecosystem.zh.md</a>。</p></details>
+</section>
+
+<!-- ================= ROADMAP ================= -->
+<section id="roadmap">
+  <h2>十四、路线图与项目状态</h2>
+  <table>
+    <tr><th>阶段</th><th>内容</th><th>状态</th></tr>
+    <tr><td>M1</td><td>框架包：声明器 + React hooks + 参考应用</td><td><span class="tag ok">已完成</span>GIS 示例全链路验证</td></tr>
+    <tr><td>M2</td><td>策略编译器（审批闭环）+ 时间旅行回放调试 + 工具 HTTP 面孔</td><td><span class="tag ok">已完成</span>47/47 测试，允许/拒绝双路径实测</td></tr>
+    <tr><td>M3</td><td>通道（webhook 入口）+ 多智能体页面（子智能体协作）</td><td><span class="tag ok">已完成</span>82 测试基线 + e2e 委派/webhook 链实测</td></tr>
+    <tr><td>DX</td><td>类型化声明（InferToolArgs + z.output）+ 单命令 dev/build/start + 脚手架 + 热重载 + UI 组件库</td><td><span class="tag ok">已完成</span>107/107 测试；一条命令起全套</td></tr>
+    <tr><td>M4</td><td>类型化客户端生成（loom client）+ 基于会话记录的评测（loom eval）</td><td><span class="tag ok">已完成</span>5 个真实夹具用例全过 + e2e 实调 57351531.17 + CI 生成物新鲜度门</td></tr>
+    <tr><td>M5</td><td>OpenAPI 双轨互通（loom openapi 导出 / loom import-openapi 导入）+ 路由治理（httpRouteOf）</td><td><span class="tag ok">已完成</span>174 测试基线 + 自举往返 e2e（活文档→导入→真调 57351531.17，零 key）+ CI openapi 新鲜度门</td></tr>
+    <tr><td>M6</td><td>Python 工具桥（loom-py）：内核保持 TS，Python 成为一等工具作者语言（@tool 装饰器 + stdio JSON Lines 协议）</td><td><span class="tag ok">已完成</span>218 项测试（35 条假子进程链永远可跑）+ selftest + 真 key e2e（tool/call gis_area_stats → Python 算出 5.31/3.83 → turn/end completed）</td></tr>
+    <tr><td>M7</td><td>记忆与多用户：会话重启恢复（sidecar 索引 + 惰性 resume）+ 匿名/本地账号隔离（scrypt + HMAC token）+ loom memory（mem0 式两阶段提取 + SQLite FTS5 召回）</td><td><span class="tag ok">已完成</span>272 项测试；SIGKILL 重启续聊 e2e、alice/bob 404 隔离矩阵、"记住偏好→新会话召回→中文回答含万亩"全链 SSE+DB 证据</td></tr>
+    <tr><td>M8</td><td>路径记忆（窄门控 paths:true 记路径 + 失败触发检索注入"待重验路径" + 重验回写衰减）+ 插件生态（消费 session-query/frontend-static；生产 dsh-python-tools / dsh-web-approval-answerer）</td><td><span class="tag ok">已完成</span>e2e 全链证据（无效 key 制造失败 turn → SSE loom/path-recall 注入 → 恢复 key 后 completed → confidence 0.8→0.9）；session_search 带 key e2e；两新包独立单测 + M2/M6 回归全绿——见 <a href="path-memory.zh.md" target="_blank">路径记忆</a> / <a href="plugin-ecosystem.zh.md" target="_blank">插件生态</a></td></tr>
+    <tr><td>Next</td><td>ACP 通道接入等后续演进</td><td><span class="tag plan">规划中</span></td></tr>
+  </table>
+  <p style="color:var(--muted);font-size:14px">深入了解：阅读仓库中的 <a href="whitepaper.zh.md" target="_blank">《Loom 设计白皮书》</a>（含每条 API 到内核机制的映射表）与 <a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank">DeepSeek Harness</a>。</p>
+</section>
+
+</main>
+
+<footer>
+  <div>Loom — 智能体时代的 Web 框架 · MIT License</div>
+  <div class="links">
+    <a href="whitepaper.zh.md" target="_blank">设计白皮书</a>
+    <a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank">DeepSeek Harness</a>
+    <a href="#quickstart">快速开始</a>
+    <a href="#faq">FAQ</a>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.copy').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var pre = btn.parentElement;
+    var code = pre.querySelector('code').innerText;
+    navigator.clipboard.writeText(code).then(function(){
+      btn.textContent = '已复制 ✓';
+      setTimeout(function(){ btn.textContent = '复制'; }, 1600);
+    });
+  });
+});
+</script>
+</body>
+</html>

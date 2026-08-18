@@ -1,0 +1,55 @@
+{
+  "region": "演示镇",
+  "note": "2022 年土地地类图斑按土地权属（村庄）汇总的面积数据。ratioPct 为该村庄图斑面积占全镇土地总面积（totalRegionAreaSqm）的百分比。",
+  "totalRegionAreaSqm": 422470481.52,
+  "items": [
+    {
+      "village": "连河村",
+      "landType": "耕地",
+      "areaSqm": 57351531.17,
+      "ratioPct": 13.58
+    },
+    {
+      "village": "太平河村",
+      "landType": "耕地",
+      "areaSqm": 31663642.88,
+      "ratioPct": 7.5
+    },
+    {
+      "village": "马河村",
+      "landType": "耕地",
+      "areaSqm": 23822469.15,
+      "ratioPct": 5.64
+    },
+    {
+      "village": "李家村",
+      "landType": "耕地",
+      "areaSqm": 20274332.9,
+      "ratioPct": 4.8
+    },
+    {
+      "village": "王家村",
+      "landType": "林地",
+      "areaSqm": 16472895.48,
+      "ratioPct": 3.9
+    },
+    {
+      "village": "赵庄村",
+      "landType": "耕地",
+      "areaSqm": 13093840.03,
+      "ratioPct": 3.1
+    },
+    {
+      "village": "刘屯",
+      "landType": "建设用地",
+      "areaSqm": 10137166.51,
+      "ratioPct": 2.4
+    },
+    {
+      "village": "陈湾村",
+      "landType": "耕地",
+      "areaSqm": 6758110.97,
+      "ratioPct": 1.6
+    }
+  ]
+}

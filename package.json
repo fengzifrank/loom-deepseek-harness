@@ -1,0 +1,30 @@
+{
+  "name": "loom-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Loom — an agent web framework on DeepSeek Harness",
+  "scripts": {
+    "build:sdk": "pnpm -r --filter \"./packages/**\" build",
+    "build:gis": "pnpm --filter gis-example build",
+    "dev:gis": "pnpm --filter gis-example loom dev",
+    "dev:legacy": "pnpm --filter legacy-erp-example loom dev",
+    "legacy:server": "node examples/legacy-erp/legacy-server/server.mjs",
+    "dev:fa": "pnpm --filter fa-example loom dev",
+    "demo:fa": "pnpm --filter fa-example start",
+    "client:gis": "pnpm --filter gis-example client",
+    "openapi:gis": "pnpm --filter gis-example openapi",
+    "eval:gis": "pnpm --filter gis-example eval",
+    "typecheck": "pnpm -r --filter \"./packages/**\" build && tsc -p packages/web/tsconfig.json --noEmit && tsc -p packages/web/tsconfig.typecheck.json && tsc -p examples/gis/tsconfig.json --noEmit && tsc -p examples/legacy-erp/tsconfig.json --noEmit && tsc -p examples/fastapi-admin/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run packages/web/test",
+    "test:e2e": "vitest run examples/gis/tests/approval-chain.test.ts examples/gis/tests/subagent-webhook.e2e.test.ts examples/gis/tests/client.e2e.test.ts examples/gis/tests/python-bridge.e2e.test.ts examples/gis/tests/resume.e2e.test.ts examples/gis/tests/auth-isolation.e2e.test.ts examples/gis/tests/memory.e2e.test.ts examples/gis/tests/qa-matrix.e2e.test.ts"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "packageManager": "pnpm@11.7.0",
+  "devDependencies": {
+    "vitest": "4.1.10",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Petstore",
+    "version": "1.0.0",
+    "description": "导入生成器测试夹具：覆盖 $ref / allOf / query / path 参数 / security / 降级坏例"
+  },
+  "servers": [{ "url": "https://petstore.example.com/v1" }],
+  "tags": [{ "name": "pets" }, { "name": "store" }],
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "listPets",
+        "summary": "List all pets",
+        "description": "按条件列出宠物",
+        "tags": ["pets"],
+        "parameters": [
+          { "name": "limit", "in": "query", "required": false, "description": "分页大小", "schema": { "type": "integer", "format": "int32" } },
+          { "name": "tags", "in": "query", "required": false, "schema": { "type": "array", "items": { "type": "string" } } },
+          { "name": "filter", "in": "query", "required": false, "schema": { "type": "object", "additionalProperties": true }, "x-loom-query-json": true }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PetList" } } }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPet",
+        "summary": "Create a pet",
+        "tags": ["pets"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewPet" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pet" } } }
+          }
+        }
+      },
+      "head": { "summary": "probe" }
+    },
+    "/pets/{petId}": {
+      "get": {
+        "tags": ["pets"],
+        "summary": "Info for a specific pet",
+        "parameters": [{ "name": "petId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pet" } } }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePet",
+        "summary": "Delete a pet",
+        "tags": ["pets"],
+        "parameters": [{ "name": "petId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "204": { "description": "deleted" } }
+      }
+    },
+    "/store/inventory": {
+      "get": {
+        "operationId": "getInventory",
+        "summary": "Returns pet inventories by status",
+        "tags": ["store"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "type": "object", "additionalProperties": { "type": "integer" } } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "petstore_auth": { "type": "http", "scheme": "bearer" },
+      "api_key": { "type": "apiKey", "in": "header", "name": "X-Api-Key" }
+    },
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "name": { "type": "string" },
+          "tag": { "type": "string" },
+          "status": { "type": "string", "enum": ["available", "sold"] },
+          "nickname": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "birthDate": { "type": "string", "format": "date-time" }
+        }
+      },
+      "NewPet": {
+        "allOf": [
+          { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "description": "宠物名" } } },
+          { "type": "object", "properties": { "tag": { "type": "string" }, "kind": { "type": "string", "description": "品种" } } }
+        ]
+      },
+      "PetList": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Pet" } }
+        }
+      }
+    }
+  }
+}

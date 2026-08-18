@@ -1,0 +1,22 @@
+# 依赖与构建产物
+node_modules/
+dist/
+packages/*/lib/
+
+# 环境变量（真实密钥只放本地 .env，模板见各 examples/*/.env.example）
+.env
+.env.*
+!.env.example
+
+# Loom 运行时数据（会话日志/记忆库/账号哈希/签名密钥，一律不入库）
+.loom*/
+*.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.pyc
+
+# 日志与杂项
+*.log

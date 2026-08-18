@@ -1,0 +1,57 @@
+{
+  "name": "@loom-sdk/web",
+  "version": "0.1.0",
+  "description": "Loom — declarative agent web framework on DeepSeek Harness",
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./react": {
+      "types": "./lib/react.d.ts",
+      "default": "./lib/react.js"
+    },
+    "./react-ui": {
+      "types": "./lib/react-ui/index.d.ts",
+      "default": "./lib/react-ui/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "loom": "./bin/loom.js"
+  },
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-app-boot": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "3.18.1",
+    "dsh-python-tools": "workspace:*",
+    "dsh-web-approval-answerer": "workspace:*",
+    "tsx": "4.23.12"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.1",
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "typescript": "5.9.3"
+  }
+}

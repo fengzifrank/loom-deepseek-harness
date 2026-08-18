@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # 版本取根 package.json 的 packageManager 字段（pnpm@11.7.0）
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # M6：Python 工具桥（loom-py）测试需要 Python 3.10+（无 python 时相关测试自跳过）
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SDK
+        run: pnpm build:sdk
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test (unit + keyless smoke；e2e 无 key 自跳过)
+        run: pnpm test
+
+      - name: Typed client freshness gate (loom client must be a no-op)
+        working-directory: examples/gis
+        run: |
+          pnpm client
+          git diff --exit-code src/loom.client.ts || {
+            echo "::error::src/loom.client.ts 过期——声明已变，请运行 pnpm client 重新生成并提交"
+            exit 1
+          }
+
+      - name: OpenAPI export freshness gate (loom openapi must be a no-op)
+        working-directory: examples/gis
+        run: |
+          pnpm openapi
+          git diff --exit-code openapi.json || {
+            echo "::error::openapi.json 过期——声明已变，请运行 pnpm openapi:gis 重新生成并提交"
+            exit 1
+          }
+
+      - name: Transcript evals (zero-network replay of real session logs)
+        run: pnpm eval:gis
+
+      - name: Build example frontend (vite)
+        run: pnpm --filter gis-example build
+
+  e2e:
+    # 可选：配好 DEEPSEEK_API_KEY secret 后自动跑真实链路（不打印 key）——
+    # 审批允许/拒绝 + 委派链/webhook + 生成客户端直调真实端点
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ secrets.DEEPSEEK_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # M6：Python e2e 起 loom-py 桥（gis 应用声明了 app.python）
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SDK
+        run: pnpm build:sdk
+
+      - name: Real-key e2e (approval / delegation+webhook / generated client / python bridge)
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: pnpm test:e2e

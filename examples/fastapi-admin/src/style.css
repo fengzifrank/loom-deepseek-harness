@@ -1,0 +1,61 @@
+:root {
+  color-scheme: dark;
+  --bg: #0e1116;
+  --panel: #161b23;
+  --panel-2: #1c232e;
+  --line: #263041;
+  --text: #dce3ec;
+  --muted: #8a96a8;
+  --accent: #4f8cff;
+  --ok: #3fbf7f;
+  --err: #e5615c;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.6 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+.loom-app { max-width: 1080px; margin: 0 auto; padding: 18px; display: flex; flex-direction: column; height: 100%; gap: 12px; }
+.loom-header { display: flex; align-items: baseline; gap: 10px; }
+.loom-header h1 { font-size: 19px; margin: 0; }
+.loom-pill { border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px; font-size: 12px; color: var(--muted); }
+.loom-pill.legacy { color: #e0a93e; border-color: #8a6d2f; }
+.loom-auth { margin-left: auto; }
+.linkish { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; padding: 0; }
+
+/* 接入方式徽章行 */
+.routes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.route {
+  border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px;
+  font-size: 12px; color: var(--text); background: var(--panel-2); cursor: help;
+}
+.route:nth-child(1) { border-color: #8a6d2f; color: #eccd8a; }
+.route:nth-child(2) { border-color: #35619f; color: #9ec1ff; }
+.route:nth-child(3) { border-color: #3d7a5c; color: #8fd8b0; }
+.route.note { border-style: dashed; color: var(--muted); background: none; cursor: default; }
+
+.loom-main { display: grid; grid-template-columns: minmax(380px, 1.4fr) minmax(280px, 1fr); gap: 12px; min-height: 0; flex: 1; }
+.chat-col { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.side-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; }
+
+.loom-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.loom-panel h2 { font-size: 13px; margin: 0 0 10px; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+
+.tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.tasks li { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.tasks li .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+.tasks li.done .dot { background: var(--ok); }
+.tasks li.error .dot { background: var(--err); }
+.tasks li .name { color: var(--muted); font-size: 11px; margin-left: auto; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.placeholder { color: var(--muted); font-size: 12.5px; }
+
+.loom-composer { display: flex; gap: 8px; }
+.loom-composer input { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; color: var(--text); outline: none; }
+.loom-composer input:focus { border-color: var(--accent); }
+.loom-composer button { background: var(--accent); border: none; border-radius: 8px; padding: 8px 18px; color: #fff; cursor: pointer; }
+.loom-composer button:disabled { opacity: 0.4; cursor: default; }
+.loom-error { color: var(--err); font-size: 13px; padding: 4px 8px; }
