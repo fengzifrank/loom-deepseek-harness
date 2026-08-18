@@ -1,8 +1,12 @@
 # Loom
 
+![Loom banner](docs/img/banner.jpg)
+
 **The agent-native web framework — FastAPI for the age of agents, built on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).**
 
 English | [中文](README.zh.md)
+
+> 📊 **At a glance**: [architecture overview](docs/img/architecture-overview.svg) · [life of a message](docs/img/message-lifecycle.svg) · [diagram gallery (13 Mermaid diagrams, Chinese)](docs/diagrams.zh.md)
 
 > Status: **M8 shipped** — declarative framework + policy compiler (approval loop) + time-travel replay debugger + webhook channels + multi-agent delegation (subagents) + the DX layer (typed tool args, schemastery outputs, one-command dev/build/start, scaffolding, hot reload, React UI components) + `loom client` typed-client generation and `loom eval` transcript evals + two-way OpenAPI interop via `loom openapi` / `loom import-openapi` + the Python tool bridge (loom-py) + memory & multi-user (session resume across restarts, anon + local-account isolation, loom memory: mem0-style two-phase extraction + SQLite FTS5 recall) + **path memory (failure-triggered recall of re-verifiable task paths with confidence decay) and the plugin ecosystem (consumes session-query & frontend-static; produces dsh-python-tools & dsh-web-approval-answerer)** — verified end-to-end against the real DeepSeek API. Read the [whitepaper](docs/whitepaper.zh.md) (Chinese); guides: [python-tools](docs/python-tools.zh.md) · [auth](docs/auth.zh.md) · [memory](docs/memory.zh.md) · [path-memory](docs/path-memory.zh.md) · [plugin-ecosystem](docs/plugin-ecosystem.zh.md) (Chinese).
 

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="740" viewBox="0 0 960 740" font-family="'PingFang SC','Microsoft YaHei',sans-serif">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#8a99b5"/></marker>
+    <linearGradient id="hl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4f8cff"/><stop offset="1" stop-color="#7c5cff"/></linearGradient>
+  </defs>
+  <rect width="960" height="740" fill="#0b0f17"/>
+  <text x="480" y="46" text-anchor="middle" fill="#fff" font-size="26" font-weight="800">Loom 五层架构全景</text>
+  <text x="480" y="72" text-anchor="middle" fill="#8a99b5" font-size="13">你只写最上面一层，下面四层都是现成的 · 依赖铁律：只依赖契约(Service Definitions)，永不绑具体实现</text>
+
+  <!-- L5 -->
+  <rect x="90" y="100" width="780" height="96" rx="14" fill="#141b2b" stroke="#3ecf8e" stroke-width="1.5"/>
+  <rect x="90" y="100" width="10" height="96" rx="5" fill="#3ecf8e"/>
+  <text x="120" y="132" fill="#3ecf8e" font-size="17" font-weight="700">L5 · 你的应用</text>
+  <text x="120" y="158" fill="#8a99b5" font-size="13">业务工具 · persona · 投影 · 页面 —— 60 行声明一个应用</text>
+  <text x="120" y="180" fill="#5d7290" font-size="12">示例：gis（地图分析） · legacy-erp（离线老系统） · fastapi-admin（真实老系统）</text>
+
+  <!-- L4 -->
+  <rect x="90" y="216" width="780" height="96" rx="14" fill="#141b2b" stroke="#4f8cff" stroke-width="1.5"/>
+  <rect x="90" y="216" width="10" height="96" rx="5" fill="#4f8cff"/>
+  <text x="120" y="248" fill="#4f8cff" font-size="17" font-weight="700">L4 · 投影与客户端层</text>
+  <text x="120" y="274" fill="#8a99b5" font-size="13">useAgentSession / useProjection —— 前端不拥有业务状态，只订阅会话事件流</text>
+  <text x="120" y="296" fill="#5d7290" font-size="12">SSE 协议（seq 断线续传） · 类型化客户端（loom client 生成，改签名→编译期报错）</text>
+
+  <!-- L3 -->
+  <rect x="90" y="332" width="780" height="118" rx="14" fill="#1a2336" stroke="url(#hl)" stroke-width="2"/>
+  <rect x="90" y="332" width="10" height="118" rx="5" fill="url(#hl)"/>
+  <text x="120" y="364" fill="#fff" font-size="18" font-weight="800">L3 · 声明层（Loom 本体）</text>
+  <text x="120" y="390" fill="#9ecbff" font-size="13">defineApp · tool · agent · projection · policy · memory · python · channel</text>
+  <text x="120" y="412" fill="#8a99b5" font-size="12.5">一份声明三张面孔（模型工具 + HTTP API + 类型化客户端） · 权力走口子（审批/预算/策略）</text>
+  <text x="120" y="434" fill="#5d7290" font-size="12">OpenAPI 双轨互通 · Path Memory · 多用户隔离 —— 本仓库的核心产出</text>
+
+  <!-- L2 -->
+  <rect x="90" y="470" width="780" height="108" rx="14" fill="#141b2b" stroke="#7c5cff" stroke-width="1.5"/>
+  <rect x="90" y="470" width="10" height="108" rx="5" fill="#7c5cff"/>
+  <text x="120" y="502" fill="#7c5cff" font-size="17" font-weight="700">L2 · DeepSeek Harness 内核（不修改，直接用）</text>
+  <text x="120" y="528" fill="#8a99b5" font-size="13">会话日志（append-only，模型可见⟺已落日志） · agent-loop · 工具管线 · LLM 适配器</text>
+  <text x="120" y="550" fill="#5d7290" font-size="12">审批缝 · 多智能体 · 持久化(jsonl/sqlite) · compaction · session-query —— 全部现成</text>
+
+  <!-- L1 -->
+  <rect x="90" y="602" width="780" height="80" rx="14" fill="#141b2b" stroke="#243049" stroke-width="1.5"/>
+  <rect x="90" y="602" width="10" height="80" rx="5" fill="#243049"/>
+  <text x="120" y="634" fill="#8a99b5" font-size="15" font-weight="700">L1 · Cordis 框架基座</text>
+  <text x="120" y="658" fill="#5d7290" font-size="12.5">IoC 容器 + 类型化事件（emit/waterfall/serial/parallel）+ 可逆副作用（注册即资源，卸载即回收）</text>
+
+  <!-- 右侧箭头注释 -->
+  <line x1="870" y1="140" x2="870" y2="560" stroke="#8a99b5" stroke-width="1.5" marker-end="url(#ar)" opacity="0.6"/>
+  <text x="888" y="350" fill="#5d7290" font-size="12" transform="rotate(90 888 350)" text-anchor="middle">你写的 ↓ 别人给的（测试 338+1 · CI 六道门）</text>
+
+  <text x="480" y="718" text-anchor="middle" fill="#5d7290" font-size="11.5">loom-deepseek-harness · 配套详解见 docs/diagrams.zh.md（13 张 Mermaid 精确图）</text>
+</svg>

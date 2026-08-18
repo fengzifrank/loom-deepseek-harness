@@ -1,8 +1,12 @@
 # Loom
 
+![Loom banner](docs/img/banner.jpg)
+
 **智能体原生的 Web 框架 —— 智能体时代的 FastAPI，构建于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 之上。**
 
 [English](README.md) | 中文
+
+> 📊 **一图入门**：[五层架构全景](docs/img/architecture-overview.svg) · [一条消息的一生](docs/img/message-lifecycle.svg) · [图解手册（13 张 Mermaid：审批/记忆/路径/OpenAPI/三路接入…）](docs/diagrams.zh.md)
 
 > 状态：**M8 已交付** —— 声明式框架 + 策略编译器（审批闭环）+ 时间旅行回放调试器 + webhook 通道 + 多智能体协作（子智能体）+ DX 层（类型化入参、schemastery 输出、单命令 dev/build/start、脚手架、热重载、React 组件库）+ `loom client` 类型化客户端生成与 `loom eval` transcript 评测 + `loom openapi` / `loom import-openapi` 双轨 OpenAPI 互通 + Python 工具桥（loom-py）+ 记忆与多用户（会话重启恢复、匿名+本地账号隔离、mem0 式两阶段提取 + SQLite FTS5 召回的 loom memory）+ **路径记忆（失败触发召回可重验任务路径 + 置信度衰减）与插件生态（消费 session-query / frontend-static；生产 dsh-python-tools / dsh-web-approval-answerer）**，已对真实 DeepSeek API 端到端验证。设计见[白皮书](docs/whitepaper.zh.md)，Python 工具见[docs/python-tools.zh.md](docs/python-tools.zh.md)，认证见[docs/auth.zh.md](docs/auth.zh.md)，记忆见[docs/memory.zh.md](docs/memory.zh.md)，路径记忆见[docs/path-memory.zh.md](docs/path-memory.zh.md)，插件生态见[docs/plugin-ecosystem.zh.md](docs/plugin-ecosystem.zh.md)。
 
