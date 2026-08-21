@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能餐厅经营手册 —— DeepSeek Harness 漫画书</title>
+<style>
+:root{--bg:#0b0f17;--card:#141b2b;--card2:#1a2336;--line:#243049;--text:#dbe4f3;--muted:#8a99b5;--accent:#4f8cff;--accent2:#7c5cff;--ok:#3ecf8e;--warn:#f5b455;--new:#e8f4a6}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:60px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.8;font-size:16px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+nav{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(11,15,23,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav .inner{max-width:980px;margin:0 auto;display:flex;gap:2px;padding:0 16px;height:52px;align-items:center;overflow-x:auto;scrollbar-width:none}
+nav .inner::-webkit-scrollbar{display:none}
+nav .logo{font-weight:800;font-size:15px;color:#fff;margin-right:10px;white-space:nowrap}
+nav .logo span{color:var(--accent)}
+nav a{color:var(--muted);font-size:12.5px;padding:5px 8px;border-radius:6px;white-space:nowrap}
+nav a:hover{color:var(--text);background:var(--card);text-decoration:none}
+main{max-width:980px;margin:0 auto;padding:0 20px}
+section{padding:56px 0 8px}
+h2{font-size:24px;color:#fff;margin-bottom:4px}
+h2 .no{color:var(--accent);margin-right:8px}
+h3{font-size:17px;margin:26px 0 10px;color:#fff}
+.lead{color:var(--muted);font-size:14.5px;margin-bottom:18px}
+.panel{display:block;width:100%;max-width:760px;margin:14px auto 6px;border-radius:14px;border:1px solid var(--line)}
+.caption{text-align:center;color:#5d7290;font-size:12.5px;margin-bottom:14px}
+.dual{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+@media(max-width:760px){.dual{grid-template-columns:1fr}}
+.box{border-radius:12px;padding:16px 18px;font-size:14px}
+.box h4{font-size:14px;margin-bottom:8px}
+.bird{background:rgba(62,207,142,.06);border:1px solid rgba(62,207,142,.25)}
+.bird h4{color:var(--ok)}
+.owl{background:rgba(124,92,255,.07);border:1px solid rgba(124,92,255,.3)}
+.owl h4{color:#a58bff}
+.owl code{font-size:12px;color:#9ecbff;background:rgba(79,140,255,.1);border:1px solid rgba(79,140,255,.2);border-radius:4px;padding:0 5px}
+.quote{margin:18px 0 6px;padding:12px 16px;background:var(--card);border-left:3px solid var(--accent);border-radius:8px;font-size:14.5px;color:var(--text)}
+.quote b{color:#fff}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+th{background:var(--card2);color:#fff;text-align:left;padding:9px 12px;border:1px solid var(--line)}
+td{padding:9px 12px;border:1px solid var(--line);color:var(--muted)}
+td:first-child{color:var(--text)}
+.cover{text-align:center;padding:110px 0 50px;border-bottom:1px solid var(--line)}
+.cover h1{font-size:40px;color:#fff;margin:14px 0}
+.cover h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{color:var(--muted);font-size:16px;max-width:640px;margin:0 auto}
+.badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:20px 0}
+.badge{font-size:12px;padding:3px 11px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--card)}
+.badge.go{color:var(--accent);border-color:rgba(79,140,255,.4)}
+.cast{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:16px 0}
+.cast .c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px}
+.cast .c b{display:block;color:#fff;margin-bottom:4px}
+.cast .c span{color:var(--muted)}
+.part{padding:60px 0 10px;border-bottom:1px dashed var(--line)}
+.part .pt{font-size:13px;letter-spacing:3px;color:var(--accent);margin-bottom:2px}
+.part h2{font-size:28px}
+footer{padding:40px 0 60px;text-align:center;color:var(--muted);font-size:13px}
+.totop{position:fixed;right:18px;bottom:18px;background:var(--card2);border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;user-select:none}
+.totop:hover{color:#fff}
+</style>
+</head>
+<body>
+
+<nav><div class="inner">
+  <div class="logo">📖 智能<span>餐厅</span>经营手册</div>
+  <a href="#ch1">为什么</a><a href="#ch2">插件</a><a href="#ch3">开业</a><a href="#ch4">换主厨</a><a href="#ch5">轮回</a><a href="#ch6">关口</a><a href="#ch7">账本</a><a href="#ch8">便签</a><a href="#ch9">流程卡</a><a href="#ch10">外包</a><a href="#ch11">包间</a><a href="#ch12">承包</a><a href="#ch13">三面孔</a><a href="#ch14">直播</a><a href="#ch15">插座</a><a href="#grad">毕业</a>
+</div></nav>
+
+<main>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="badges"><span class="badge go">DeepSeek Harness 漫画书</span><span class="badge">23 幅漫画 · 15 章</span><span class="badge">新手🐣 / 老手🦉 双轨</span></div>
+  <h1>智能餐厅<em>经营手册</em></h1>
+  <p class="sub">一家餐厅的完整解剖：从"顾客说一句就能上菜"到"灶台可换、账本永存、经理把关"——这其实就是 DeepSeek Harness 的全部。<br><b style="color:#fff">新手</b>只看漫画和🐣绿框就能入门；<b style="color:#fff">老手</b>加看🦉紫框直达内核源码。</p>
+  <div class="cast">
+    <div class="c"><b>👨 顾客</b><span>用户/意图<br>只说要吃什么</span></div>
+    <div class="c"><b>👨‍🍳 厨师</b><span>模型+回合循环<br>想菜、拿工具</span></div>
+    <div class="c"><b>🕴 经理</b><span>审批与权限<br>开火必须他按</span></div>
+    <div class="c"><b>🦉 管理员</b><span>档案室猫头鹰<br>守唯一账本</span></div>
+    <div class="c"><b>🤖 机器人</b><span>工具/服务<br>按菜单干活</span></div>
+    <div class="c"><b>📕 账本</b><span>会话日志<br>永不涂改</span></div>
+  </div>
+</div>
+
+<!-- ============ PART 1 ============ -->
+<div class="part"><div class="pt">PART 1</div><h2>入门篇 · 这家餐厅凭什么</h2><p class="lead">看完这七章，你就明白了 harness 存在的意义和它的四根柱石。</p></div>
+
+<section id="ch1">
+  <h2><span class="no">01</span>为什么是餐厅</h2>
+  <img class="panel" src="img/comic/01-intent-vs-process.jpg" alt="意图 vs 流程"><div class="caption">左：传统软件——用户照着写死的流程卡亲自下厨；右：智能餐厅——说一句"低卡套餐"</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>传统 App 把"先点什么、后点什么"冻死在按钮里——因为过去计算机不懂你的意图。现在模型懂了：你只说目标（意图），做菜的流程（编排）交给厨房。这就是"agent 驱动"四个字的全部含义。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>范式从 <code>请求→处理→响应</code> 变为 <code>意图→会话→回合</code>：一次 HTTP 请求毫秒级，装不下一个几分钟的 agent 回合（含工具执行与人工审批）——所以状态必须外置到<b>会话日志</b>（见第 7 章），而不是塞在请求里。</div>
+  </div>
+  <div class="quote">金句：<b>App 是冻住的流程，harness 是让流程活过来的厨房。</b></div>
+</section>
+
+<section id="ch2">
+  <h2><span class="no">02</span>商场的规则：一切皆插件</h2>
+  <img class="panel" src="img/comic/09-cordis-mall.jpg" alt="商场插座走廊"><div class="caption">每个店铺都是插在"水电网"上的玻璃盒子——随时可插拔，别人不受影响</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>这家餐厅开在一座神奇的商场里：每个店铺（能力）都是标准玻璃盒，插上水电网（共享总线）就开业，拔掉就走人、丝毫不影响邻居。想换冷库品牌？拔旧插新，菜单和账本一字不动。<b>连主厨的"做菜流程"本身也是一个盒子。</b></div>
+    <div class="box owl"><h4>🦉 老手看</h4>商场=Cordis 框架（vendored，<code>vendor/cordis</code>）：水电网=共享 <code>Context</code>；插拔=<b>注册即效果</b>（<code>ctx.effect()</code> 返回回收函数，卸载即回退）；"无特权内核"官方原文在 <code>docs/architecture.md:13</code>——连 agent-loop 都是普通插件（<code>packages/core/agent-loop</code>），这是它区别于"焊死内核"产品的根本。</div>
+  </div>
+  <h3>店里的三条通道（事件的三种脾气）</h3>
+  <img class="panel" src="img/comic/19-event-lanes.jpg" alt="事件车道"><div class="caption">广播巷 / 接力巷 / 严检巷——不同消息走不同通道</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>店内消息分三种走法：<b>大喇叭</b>（广播巷，人人听见）；<b>接力棒</b>（接力巷，每人可改造再传，也可喊停）；<b>排队长龙</b>（严检巷，一个一个来，谁都不能插队）。哪种消息走哪条道，是开店时就写进规矩的。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>对应 Cordis 四种事件分发模式：<code>emit</code>（通知）/ <code>waterfall</code>（环绕中间件，listener 必须调 <code>next()</code> 委托、不调即短路——审批裁决就用它）/ <code>serial</code>（有序检查点，如 <code>agent/turn-stopping</code>）/ <code>parallel</code>（各自独立）。事件的分发模式是其公共契约的一部分（<code>docs/cordis-primer.md</code>）。</div>
+  </div>
+  <div class="quote">金句：<b>插件的世界里没有后门——想干预，只有明文规定的通道。</b></div>
+</section>
+
+<section id="ch3">
+  <h2><span class="no">03</span>开业清单：层层叠加压成一本</h2>
+  <img class="panel" src="img/comic/10-opening-checklists.jpg" alt="开业清单"><div class="caption">基础规章 → 品牌手册 → 分店补丁，层层压成一本《开业手册》</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>开一家分店不需要从零写规章：拿<b>基础规章</b>（每家店都要的），叠上<b>品牌手册</b>（连锁店的统一要求），再叠一张<b>本店补丁</b>（"我们店不做香菜"）。机器把它们压成一本手册——每一条都可以被上层覆盖。同一家品牌还能有"标准店/快餐店/深夜店"几种预制模板。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>这就是 <b>profile / bundle / patch</b> 层序组合（<code>docs/architecture.md:15-37</code>）：dsh-base 是第一层；bundle 是可分发的配置层；patch 按 id 整体替换某行配置；<code>dsh --dump-config</code> 打印你机器真实启动的树。"标准店/快餐店"= 内核 preset（standard/PTC/minimal/creative 四种，per-session 组合，空会话可换）。</div>
+  </div>
+  <div class="quote">金句：<b>"现在运行的这家店是什么"，完全由清单叠出来的那本手册说了算。</b></div>
+</section>
+
+<section id="ch4">
+  <h2><span class="no">04</span>主厨团队可以更换</h2>
+  <img class="panel" src="img/comic/11-chef-teams.jpg" alt="三支主厨团队"><div class="caption">法餐团队 / 中餐团队 / 机器臂团队——出餐口菜品一模一样</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>菜单（契约）是店里的，主厨团队（模型）是雇来的。今天用法餐团队、明天换成机器臂团队，出的菜按同一张菜单验收——顾客完全无感。<b>要害：换厨师不许改菜单。</b></div>
+    <div class="box owl"><h4>🦉 老手看</h4>LLM 层是适配器体系：实现 <code>LlmAdapter.stream()</code> 即可注册（<code>packages/llm/llm/src/index.ts:700</code>）；中立流式协议 StreamChunk 让上层只见统一词汇。官方刻意养了<b>两个真实现互为考题</b>（twin adapters，Agent Note 2026-06-13）：任何只有一个适配器能表达的词汇都被视为方言 bug。2026-08 升级后目录里还有了<b>能看图的视觉模型</b>。</div>
+  </div>
+  <div class="quote">金句：<b>模型是可替换的临时工，契约才是固定资产。</b></div>
+</section>
+
+<section id="ch5">
+  <h2><span class="no">05</span>一道菜的轮回：环形传送带</h2>
+  <img class="panel" src="img/comic/12-conveyor-loop.jpg" alt="环形传送带"><div class="caption">思考站 → 工具架 → 检查站，循环直到绿旗升起</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>一张订单卡上传送带：到<b>思考站</b>厨师决定下一步 → 到<b>工具架</b>机器人递工具执行 → 到<b>检查站</b>猫头鹰问"还欠东西吗"。欠（工具还没回话/又有新指示）就再转一圈；不欠，绿旗升起、订单完成。一整圈叫一个"回合"，每站叫一"步"。</div>
+    <div class="box owl"><h4>🦉 老手看</h4><code>turn/step</code> 循环在 <code>packages/core/agent-loop/src/agent.ts:246-330</code>：消息经 inbox 三入口进入（followup 开新回合 / steer 插队下一步 / inject 塞资料不叫醒，<code>packages/core/agent/src/inbox.ts</code>）；回合是否继续由<b>数据决定</b>——检查站是 <code>agent/turn-stopping</code>（serial），想拦就往 inbox 塞新指示，机器重新盘点，<b>监听器顺序不影响结果</b>。</div>
+  </div>
+  <div class="quote">金句：<b>回合什么时候结束不看谁嗓门大，只看账上还欠不欠。</b></div>
+</section>
+
+<section id="ch6">
+  <h2><span class="no">06</span>菜单与三道关口</h2>
+  <img class="panel" src="img/comic/02-menu-contract.jpg" alt="菜单即承诺"><div class="caption">留样秤 / 盘点机器人 / 打包机——三台机器按菜单干活</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>菜单是签给机器的承诺书：配料与出品写清楚，留样秤（输出校验）、盘点机器人（类型登记）、打包机（程序消费）照单干活。糊弄菜单=拆质检——菜坏了没人拦，账本全是错。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>工具管线三道口（<code>packages/core/tools/src/index.ts</code>）：<code>tools/pre-execute</code>（waterfall，裁 allow/deny/ask）→ <code>tools/execute</code>（超时/重试包装）→ <code>tools/post-execute</code>（可改文案/附加上下文）；输出契约=canonical JSON + <code>output.render</code> 投影，schema 白名单进提示词。UI 卡片是 args 的纯函数——回放逐像素重现。</div>
+  </div>
+  <h3>开火必须过经理</h3>
+  <img class="panel" src="img/comic/06-approval-desk.jpg" alt="经理审批台"><div class="caption">执行前拦截；经理五分钟不在 = 自动拒绝</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>要动真格（写数据库）？托盘端到经理台前等按钮。经理不在场<b>默认拒绝</b>——宁可不上菜，不许乱上菜。两张卡同时递？只认先到那张。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>fail-closed 是审批缝的品格（<code>dsh-user-approval</code>，无 answerer 即拒绝）；裁决经 <code>approval/asked + decided</code> 成对落日志=免费审计；Loom 的 SSE 审批卡断线幂等重发、并发第二答复 409。QA 冲刺修过的真实漏洞也在这条线上：审批只认 owner、匿名身份禁用账号命名空间前缀。</div>
+  </div>
+  <div class="quote">金句：<b>权力走关口，关口写进账本——没有关口之外的权力。</b></div>
+</section>
+
+<section id="ch7">
+  <h2><span class="no">07</span>账本与禁令：唯一事实来源</h2>
+  <img class="panel" src="img/comic/04-archive-room.jpg" alt="档案室"><div class="caption">猫头鹰守着永不涂改的账本，六个部门读同一本</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>店里发生的每件事按页码记进一本<b>永不涂改</b>的账本。厨师做下一道菜前<b>重读账本</b>（不是凭记忆）——所以永不记错历史、店歇业重开翻开接着干。大堂直播、审计、复盘、分叉，全读这一本。<b>厨师没有记忆，记忆是每次算出来的。</b></div>
+    <div class="box owl"><h4>🦉 老手看</h4>会话日志 append-only，事件 <code>seq</code> 严格连续（<code>packages/core/session/src/index.ts:628</code>）；模型上下文=<code>deriveMessages()</code> 从日志投影（非存储）；"模型可见⟺已落日志"是最高军规，有运行时不变量断言（<code>agent-loop/src/invariant.ts:21</code>）：请求与日志 fold 结果逐字段相等才放行。<b>回放=事实重放，不是模拟。</b></div>
+  </div>
+  <h3>小纸条禁令</h3>
+  <img class="panel" src="img/comic/05-no-side-notes.jpg" alt="小纸条禁令"><div class="caption">厨师拒收一切小纸条——只认玻璃罩下的账本</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>有人递小纸条？厨师摆手拒绝。想影响厨师，先把话写进账本。不然半年后重放账本，还原不出厨师当时真实看到的世界——整座"回放可信"的大厦会塌。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>所有模型可见输入必须经 durable 事件通道：记忆召回走 <code>form:'recall'</code> 的 user/message、工具附言走 <code>additionalContexts</code>、插件上下文走 <code>agent.inject()</code>——殊途同归全部落日志。<code>agent/request</code> waterfall 明文禁止改消息，只能改 config。</div>
+  </div>
+  <div class="quote">金句：<b>账本之外无真相，这是回放、审计、分叉共同的命根子。</b></div>
+</section>
+
+<!-- ============ PART 2 ============ -->
+<div class="part"><div class="pt">PART 2</div><h2>内核篇 · 深水区</h2><p class="lead">账本变厚、流程提速、人手不够、房间太多、活干太久——餐厅成长的五个深水问题。</p></div>
+
+<section id="ch8">
+  <h2><span class="no">08</span>账本太厚：贴摘要便签，原页不撕</h2>
+  <img class="panel" src="img/comic/16-summary-note.jpg" alt="摘要便签"><div class="caption">猫头鹰给前半本贴一张摘要便签——原页一页不撕</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>聊了三百页，厨师每次重读太慢。办法：给前半本贴一张<b>摘要便签</b>，厨师从便签开始读。但原页一页不撕——审计照样能翻到 300 页前的原始对话。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>compaction 的精髓：<b>压缩的是"表面"（模型看到的派生历史），不篡改"日志"（事实本体）</b>——surface 用 <code>{op:'replace'}</code> 遮蔽一段，原始事件永在（<code>packages/compaction/</code>）。类比人脑：细节褪色成要点，但档案室留着全卷宗。</div>
+  </div>
+  <div class="quote">金句：<b>给厨师看摘要，给审计留全本——两边都不将就。</b></div>
+</section>
+
+<section id="ch9">
+  <h2><span class="no">09</span>流程卡机器：一张卡跑完整套</h2>
+  <img class="panel" src="img/comic/13-recipe-card-machine.jpg" alt="流程卡机器"><div class="caption">厨师写一张流程卡，机器按卡自动跑完整套工序</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>有些活要连调五个工具：查库存→算成本→比价→下单→记录。让厨师每步都亲自跑，五次来回又慢又贵。<b>不如厨师写一张流程卡（程序），机器照卡一次跑完</b>，只把最终结果端出来。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>Code Mode（PTC）：模型只见一个 <code>run_code</code> 工具，系统提示词注入按当前工具集生成的类型化 SDK；程序内每次子调用<b>仍走完整管线</b>（审批/日志照旧），落 <code>tool/code-dispatch</code> 事件——提速不豁免治理。模型直呼原生工具名会被拒并指路。</div>
+  </div>
+  <div class="quote">金句：<b>让模型写代码当控制流，但每一步仍在账本上。</b></div>
+</section>
+
+<section id="ch10">
+  <h2><span class="no">10</span>外包小厨房：委派与回报</h2>
+  <img class="panel" src="img/comic/14-satellite-kitchens.jpg" alt="外包小厨房"><div class="caption">主厨递任务卡给卫星餐车，成品经传菜升降机送回</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>大厨忙着主菜，核对小活外包给卫星小厨房：递一张<b>任务卡</b>，小厨房自己开火自己记账（独立的账本），完成后成品经升降机送回。外包可以再外包，但不得超过三层——防止包工头套包工头。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>subagent 体系（<code>packages/subagent/</code>）：子会话独立日志、header 记 <code>parentSession/delegationDepth</code>（深度预算跨重启存活）；前台 one-shot 或 continuable（父可继续发话）；Loom 的 M3 实现了 per-agent 可见性（visibleTo）——只有被授权的父看得见委派工具。</div>
+  </div>
+  <div class="quote">金句：<b>委派不是甩锅——子厨房有自己的账本，父厨房看得见进度。</b></div>
+</section>
+
+<section id="ch11">
+  <h2><span class="no">11</span>独立包间：每桌自己的服务员</h2>
+  <img class="panel" src="img/comic/15-private-pods.jpg" alt="独立包间"><div class="caption">包间各有服务员与调料架，中央 pantry 全体共享</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>多位客人各有包间：每间有自己的服务员、自己的特色调料（该桌专属的工具与口味），互相不打扰；但中央 pantry（公共设施）全体共享。客人走了，包间整体撤掉——<b>东西是谁的、什么时候清场，一条规矩同时管两件事。</b></div>
+    <div class="box owl"><h4>🦉 老手看</h4>scope 作用域（<code>packages/core/scope</code>，Agent Note 2026-07-08）：<code>agent.ctx</code> 一个注册上下文同时决定<b>可见性</b>与<b>生命周期</b>；扁平不继承，父链只给"注册向下继承/事件向上送达"两条固定方向；它是"多 agent 同住一店互不污染"的地基，但<b>明确不是安全边界</b>——防打扰，不防坏人。</div>
+  </div>
+  <div class="quote">金句：<b>一个事实管两件事：注册在谁的包间，就归谁看见、随谁清场。</b></div>
+</section>
+
+<section id="ch12">
+  <h2><span class="no">12</span>长期承包与预约铃</h2>
+  <img class="panel" src="img/comic/17-contract-goal.jpg" alt="承包进度板"><div class="caption">进度板一格一格推进；闹钟罩在玻璃罩里，只有经理能按</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>普通订单干完就完；长期承包不一样：合同（目标）挂在墙上，厨师<b>自己一轮一轮干</b>直到完工。最关键的设计：合同和<b>闹钟分开</b>——店门重开，合同还在，但闹钟必须经理亲手按（复工），<b>记忆可以自动恢复，自主必须人工授权</b>。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>goal 子系统：durable 阶段（active/paused/blocked/complete）落日志、compare-and-set 版本号、轮数预算；<b>activation 永不持久化</b>——每次 session-start 强制 disarm，人显式 resume 才续（<code>packages/goal/</code>）。blocked 是唯一"卡住"状态：稳定 code + 人话解释，收编所有故障类型。</div>
+  </div>
+  <h3>预约铃</h3>
+  <img class="panel" src="img/comic/18-appointment-bell.jpg" alt="预约铃"><div class="caption">铃到点响，机器人递提醒卡，厨师醒来开新一轮</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>"明天九点提醒我复火"——预约铃到点叫醒小睡的厨师，递上提醒卡开新一轮。铃只在厨师<b>闲着</b>时响：真有客人在点菜，提醒排队等一等。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>schedule 是<b>会话内</b>提醒（<code>packages/schedule/</code>）：durable <code>schedule/change</code> 事件为唯一权威，交付走 <code>agent.followup()</code> 排队、从不 steer 打断当前回合；会话必须活着（无跨进程冷唤醒）——这是它与外部 cron 的边界。</div>
+  </div>
+  <div class="quote">金句：<b>承包商可以自己连续干活，"继续干"的闸门永远留给人。</b></div>
+</section>
+
+<!-- ============ PART 3 ============ -->
+<div class="part"><div class="pt">PART 3</div><h2>生态篇 · 开成连锁</h2><p class="lead">把这家店的能力开放给世界，也把世界的设施接进店里。</p></div>
+
+<section id="ch13">
+  <h2><span class="no">13</span>一张蓝图，三张面孔</h2>
+  <img class="panel" src="img/comic/21-blueprint-faces.jpg" alt="一张蓝图三张面孔"><div class="caption">经理画的一页蓝图，分裂成菜单板、取餐窗口、手机屏幕</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>开发只做一次（画一张蓝图），自动得到三样东西：<b>菜单板</b>（AI 助手能点）、<b>取餐窗口</b>（小程序/脚本直接调）、<b>手机屏</b>（前端带类型的调用）。改了蓝图，三处同时收到信号——不会"后端改了前端炸"。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>Loom 框架的核心主张（白皮书 A1）：<code>app.tool()</code> 一次声明=模型面孔（schema 进提示词）+ HTTP 面孔（走完整管线）+ 类型化客户端（<code>loom client</code> 生成，CI 新鲜度门盯着漂移）。FastAPI"装饰器=路由+校验+文档"的智能体时代版本。</div>
+  </div>
+  <img class="panel" src="img/comic/03-three-outlets.jpg" alt="三个出口一份数据"><div class="caption">同一道菜的三个去向：仓库（素颜）/ 讲解词 / 展柜</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>数据出口的铁律：<b>仓库记素颜事实，讲解词和展柜各自化妆，化妆永远不进仓库。</b>想换展柜样式？动展柜就好——改版式永远不用重跑 AI。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>canonical value（裸数据）+ <code>output.render</code>（模型侧）+ presentCall/presentResult（UI 卡片，纯函数可回放）三层分离；Markdown 进返回值=污染日志+破坏 Code Mode 程序化消费。</div>
+  </div>
+  <div class="quote">金句：<b>写一次，三处消费，三处同时收到变更信号。</b></div>
+</section>
+
+<section id="ch14">
+  <h2><span class="no">14</span>玻璃窗与多屏直播</h2>
+  <img class="panel" src="img/comic/22-glass-window.jpg" alt="玻璃窗直播"><div class="caption">后厨玻璃窗直播，堂食屏/取餐屏/家里电视同步同映</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>后厨是大玻璃窗：做的每一步都在直播。堂食的屏、路边取餐的屏、顾客家里的电视，放的是<b>同一场直播</b>——断网了重连，从上次看到的页码接着放；关掉电视再开，从第一页重放一遍就恢复。<b>屏幕自己不记菜谱，只看直播。</b></div>
+    <div class="box owl"><h4>🦉 老手看</h4>UI=会话事件流的投影（官方路径 <code>docs/architecture.md:121</code>）：SSE 按 <code>seq</code> 续传（<code>?since=</code>），前端 fold 纯函数重建界面；官方 Web UI 的 30+ 区块本身就是浏览器侧插件树（同一 vendored Loader）；多端=同一日志的多个投影，天然一致。</div>
+  </div>
+  <div class="quote">金句：<b>界面是日志的影子——影子可以有很多个，影子别想反过来改本体。</b></div>
+</section>
+
+<section id="ch15">
+  <h2><span class="no">15</span>插座墙与安全罩</h2>
+  <img class="panel" src="img/comic/20-socket-wall.jpg" alt="标准插座墙"><div class="caption">三列标准插座：证书卷轴 / 工厂齿轮 / 购物篮——任何设备自由插</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>店的后墙是一排<b>标准插座</b>：每列形状不同——一列管"承诺长什么样"（契约）、一列管"谁来干"（实现）、一列管"谁来用"（消费）。灶插哪列、冰箱插哪列都是自由的：换一台灶（实现），菜单（契约）和点菜屏（消费）纹丝不动。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>capability seam 三件套（<code>docs/glossary.md:9</code>）：Service Definition/Provider/Consumer 分包独立演化。威力在"共享执行世界"：fs+subprocess 指向远程沙箱，Bash/PTY/LSP <b>整体搬家零分叉</b>（<code>docs/architecture.md:102</code>）。Loom 的实践：消费官方件（session-query/frontend-static），也产出插件（python-tools/approval-answerer）回馈生态——对照 Codex："插件=内容包"与"插件=架构单元"的分界线。</div>
+  </div>
+  <h3>安全罩：危险实验透明可控</h3>
+  <img class="panel" src="img/comic/23-safety-dome.jpg" alt="安全罩"><div class="caption">透明罩下做危险实验，经理盯着，红色拉杆一键全停</div>
+  <div class="div-note" style="margin:16px 0"><div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>要试新菜有风险？在透明安全罩里做：看得到、罩得住、一键停。罩子的默认档位（只读/可写工作区/全开）写进开业清单，越权自动拦。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>沙箱是可替换 seam（<code>ctx.sandbox</code>）：bwrap/Landlock/Seatbelt/Windows ACL 同一 provider 的多实现+远程沙箱（E2B）；权限预设三档（read-only/workspace-write/danger-full-access）+ 审批 fail-closed 组成纵深。2026-08 升级还修了 Bubblewalk 的 /proc 绕过——供应链钉版纪律的意义所在。</div>
+  </div></div>
+  <img class="panel" src="img/comic/08-modular-kitchen.jpg" alt="模块化后厨"><div class="caption">终章回顾：灶台/冰箱/主厨流程皆模块——菜单与账本不动</div>
+  <div class="quote">金句：<b>标准插座让能力自由流动，安全罩让风险透明可控——开放与稳妥可以兼得。</b></div>
+</section>
+
+<!-- ============ GRADUATION ============ -->
+<section id="grad">
+  <h2><span class="no">🎓</span>一页毕业</h2>
+  <p class="lead">故事 ↔ 术语总表，和按角色的学习路径。</p>
+  <table>
+    <tr><th>餐厅</th><th>术语</th><th>一句话</th></tr>
+    <tr><td>商场水电网</td><td>Cordis Context</td><td>共享总线，注册即效果</td></tr>
+    <tr><td>三条通道</td><td>emit / waterfall / serial / parallel</td><td>事件的四种脾气，干预只有明路</td></tr>
+    <tr><td>开业清单</td><td>profile / bundle / patch / preset</td><td>层层叠加压成一本，上层可覆盖</td></tr>
+    <tr><td>主厨团队</td><td>LlmAdapter（可换模型）</td><td>换厨师不改菜单</td></tr>
+    <tr><td>环形传送带</td><td>turn / step 循环</td><td>欠东西就再转一圈，数据决定</td></tr>
+    <tr><td>任务卡三入口</td><td>followup / steer / inject</td><td>新回合 / 插队 / 塞资料不叫醒</td></tr>
+    <tr><td>菜单</td><td>tool schema</td><td>签给机器的承诺</td></tr>
+    <tr><td>三道关口</td><td>pre-execute / execute / post-execute</td><td>裁决 → 执行 → 复核</td></tr>
+    <tr><td>经理审批台</td><td>approval（fail-closed）</td><td>不在场=拒绝，全程落账</td></tr>
+    <tr><td>永不涂改的账本</td><td>session log（append-only, seq）</td><td>唯一事实来源</td></tr>
+    <tr><td>厨师重读账本</td><td>deriveMessages()</td><td>记忆是算出来的</td></tr>
+    <tr><td>小纸条禁令</td><td>model-visible ⟺ logged</td><td>回放可信的命根子</td></tr>
+    <tr><td>摘要便签</td><td>compaction（surface replace）</td><td>给厨师看摘要，给审计留全本</td></tr>
+    <tr><td>流程卡机器</td><td>Code Mode / PTC（run_code）</td><td>模型写程序编排，子调用照走管线</td></tr>
+    <tr><td>外包小厨房</td><td>subagent（depth 预算）</td><td>子有自己的账本，父看得见进度</td></tr>
+    <tr><td>独立包间</td><td>scope（agent.ctx）</td><td>可见性与生命周期，一个事实管两件事</td></tr>
+    <tr><td>承包合同 vs 闹钟</td><td>goal（durable vs activation）</td><td>重启必 disarm，复工要人按</td></tr>
+    <tr><td>预约铃</td><td>schedule（会话内提醒）</td><td>空闲时交付，从不打断</td></tr>
+    <tr><td>一张蓝图三张面孔</td><td>tool → 模型/HTTP/客户端</td><td>改一处，三处收到信号</td></tr>
+    <tr><td>玻璃窗直播</td><td>SSE 投影（seq 续传）</td><td>界面是日志的影子</td></tr>
+    <tr><td>三列插座墙</td><td>capability seam 三件套</td><td>契约/实现/消费分离</td></tr>
+    <tr><td>安全罩</td><td>sandbox + 权限预设</td><td>透明可控，一键全停</td></tr>
+  </table>
+  <h3>接下来去哪</h3>
+  <table>
+    <tr><th>你是谁</th><th>下一步</th></tr>
+    <tr><td>🐣 新手</td><td><a href="learn.html">学习指南</a>（10 分钟跑起来）→ <a href="comic.zh.md">8 幅入门漫画</a></td></tr>
+    <tr><td>🛠 开发者</td><td><a href="features.zh.md">能力详解</a> → 三个 examples 任选其一把玩</td></tr>
+    <tr><td>🦉 内核好奇者</td><td><a href="whitepaper.zh.md">设计白皮书</a>（API→内核映射表）→ DeepSeek Harness 源码 <code>docs/architecture.md</code></td></tr>
+  </table>
+</section>
+
+</main>
+
+<div class="totop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ 目录</div>
+
+<footer>
+  《智能餐厅经营手册》 · 23 幅 AI 生成漫画（MiniMax image-01-live · 固定 seed 可复现：<code>node scripts/comic-gen.mjs</code>）· 文字人工撰写<br>
+  Loom — agent-native web framework on <a href="https://github.com/deepseek-ai/deepseek-harness">DeepSeek Harness</a> · MIT
+</footer>
+
+</body>
+</html>

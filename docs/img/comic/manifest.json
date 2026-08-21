@@ -18,5 +18,15 @@
     "bytes": 337274,
     "ms": 9668,
     "prompt": "A comic-style restaurant kitchen where the stove, the refrigerator and the chef workstation are each installed inside separate large crates with handles and wheels, like swap-in modules. A maintenance worker with a wrench slides one whole module crate out on rails, replacing it with a new identical-size module crate. On the wall, the wooden menu board and a thick blue hardcover ledger book under a glass dome remain completely untouched. Japanese manga art style, clean bold outlines, expressive faces, warm colors, soft restaurant lighting. Absolutely no text, no words, no letters, no numbers, no captions anywhere in the image."
+  },
+  {
+    "id": "23-safety-dome",
+    "model": "image-01-live",
+    "seed": 20260821,
+    "apiId": "06d7cf22762fa3c877a5bca57e581736",
+    "ext": "jpg",
+    "bytes": 347091,
+    "ms": 8331,
+    "prompt": "In the corner of the kitchen stands a transparent safety dome over a cooking station; inside the dome, a small controlled risky experiment cooks with sparks safely contained. a strict manager in a dark suit holding a clipboard watches through the glass with a clipboard, and a red lever next to the dome can shut everything down instantly. Japanese manga art style, clean bold outlines, expressive faces, warm colors, soft restaurant lighting. Absolutely no text, no words, no letters, no numbers, no captions anywhere in the image."
   }
 ]

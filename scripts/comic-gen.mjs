@@ -74,6 +74,66 @@ const PANELS = [
     id: '08-modular-kitchen',
     prompt: `A comic-style restaurant kitchen where the stove, the refrigerator and the chef workstation are each installed inside separate large crates with handles and wheels, like swap-in modules. A maintenance worker with a wrench slides one whole module crate out on rails, replacing it with a new identical-size module crate. On the wall, the wooden menu board and ${CHARS.ledger} under a glass dome remain completely untouched. ${CHARS.style}`,
   },
+  {
+    id: '09-cordis-mall',
+    prompt: `A cross-section blueprint view of a shopping mall specialized for restaurants: a long corridor with many modular shop units, each unit is a glass box plugged into shared utility sockets in the floor and ceiling (water pipes, electricity lines, glowing data cables). One shop is being unplugged by movers and its sign is dimming, while the utilities stay on for everyone else. A friendly owl building manager holds a rulebook. ${CHARS.style}`,
+  },
+  {
+    id: '10-opening-checklists',
+    prompt: `A restaurant opening ceremony scene: on a wooden desk lies a tall stack of paper checklist documents layered on top of each other, and a magical stamp press is compressing them into one single opening manual booklet. ${CHARS.manager} proudly holds the final booklet. Behind him, the restaurant interior is being assembled from flat-pack modules. ${CHARS.style}`,
+  },
+  {
+    id: '11-chef-teams',
+    prompt: `Behind a kitchen pass counter, three completely different chef teams work side by side in three interchangeable kitchen bays: a classic French chef team with tall hats, a Chinese wok master team with round hats, and a futuristic robot chef arm team. All three bays serve identical-looking dishes onto the same pass counter where ${CHARS.customer} waits. Each bay sits on wheels with big handles, ready to swap. ${CHARS.style}`,
+  },
+  {
+    id: '12-conveyor-loop',
+    prompt: `A circular conveyor belt running through the restaurant kitchen with an order card traveling along it: first station a cloud thinking station with a glowing brain, second station a tool rack station where a mechanical arm grabs utensils, third station a checkpoint station where a wise owl inspects. The order card loops around the circle multiple times until a green flag rises. ${CHARS.style}`,
+  },
+  {
+    id: '13-recipe-card-machine',
+    prompt: `${CHARS.chef} writes a single long recipe card and inserts it into a big friendly machine; inside the machine, visible through a glass window, small automated arms perform a whole sequence of cooking steps in order, using many different utensils in a row, and one finished dish comes out at the end. ${CHARS.style}`,
+  },
+  {
+    id: '14-satellite-kitchens',
+    prompt: `A main restaurant kitchen with two tiny satellite kitchen food-trucks parked beside it, connected by dumbwaiter elevators. ${CHARS.chef} hands a small task card to one satellite truck where a junior chef works; when done, the satellite truck sends back a small result box via the dumbwaiter rope. ${CHARS.style}`,
+  },
+  {
+    id: '15-private-pods',
+    prompt: `A restaurant floor with several round private dining pods, each pod containing its own dedicated waiter, its own small spice rack and utensils, and its own customer. In the center behind the pods stands one shared giant pantry room that all pods draw supplies from. ${CHARS.style}`,
+  },
+  {
+    id: '16-summary-note',
+    prompt: `In the wooden archive room, a wise owl librarian carefully glues a single bright yellow sticky note onto the front half of ${CHARS.ledger}, the note showing tiny simple food icons summarizing many pages. The original pages behind the note remain fully intact and readable. ${CHARS.style}`,
+  },
+  {
+    id: '17-contract-goal',
+    prompt: `On the restaurant wall hangs a framed long-term catering contract board with a row of small round tokens advancing along a track, like a progress board. ${CHARS.chef} works round after round checking tokens. Next to the board, a big brass alarm clock with a protective glass cover that only ${CHARS.manager} can unlock and press. ${CHARS.style}`,
+  },
+  {
+    id: '18-appointment-bell',
+    prompt: `A cozy sleeping pod where ${CHARS.chef} naps; a wall of brass service bells each connected to a small calendar wheel. One bell rings at the right moment and one of the ${CHARS.robots} gently delivers a reminder card to the pod. The chef wakes up and starts a fresh round of cooking. ${CHARS.style}`,
+  },
+  {
+    id: '19-event-lanes',
+    prompt: `A busy airport-security-style corridor inside the restaurant with multiple lanes: one wide broadcast lane where a town crier shouts news to everyone, one relay lane where staff pass a baton from person to person transforming it slightly, one strict single-file lane with a stern guard checking order. Staff and ${CHARS.robots} pick their lanes. ${CHARS.style}`,
+  },
+  {
+    id: '20-socket-wall',
+    prompt: `A large standardized socket wall in the restaurant back office with three columns of colorful universal sockets. Different appliances plug in freely: a stove plugs into one column, a fridge into another, a menu display into the third. Each socket column has a distinct icon shape: a certificate scroll, a factory gear, a shopping basket. ${CHARS.style}`,
+  },
+  {
+    id: '21-blueprint-faces',
+    prompt: `A magical architect moment: ${CHARS.manager} draws one single blueprint page, and it splits into three glowing copies flying away: one becomes a wooden menu board, one becomes a service counter window with a bell, one becomes a mini smartphone screen held by ${CHARS.customer}. All three clearly show the same dish icon. ${CHARS.style}`,
+  },
+  {
+    id: '22-glass-window',
+    prompt: `A big glass kitchen window where passersby watch ${CHARS.chef} cook live; in front of the window, multiple different screens of various sizes mirror the exact same live cooking scene from the video feed, one screen in the dining room, one mini screen at a drive-through counter, one on a home TV. ${CHARS.style}`,
+  },
+  {
+    id: '23-safety-dome',
+    prompt: `In the corner of the kitchen stands a transparent safety dome over a cooking station; inside the dome, a small controlled risky experiment cooks with sparks safely contained. ${CHARS.manager} watches through the glass with a clipboard, and a red lever next to the dome can shut everything down instantly. ${CHARS.style}`,
+  },
 ]
 
 /** 带退避的生成调用 */

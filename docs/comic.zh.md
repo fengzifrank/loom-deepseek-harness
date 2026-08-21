@@ -104,4 +104,4 @@
 
 ---
 
-*想要更精确的架构图？见[图解手册](diagrams.zh.md)。想动手跑起来？见[学习指南](learn.html)。漫画可由 `node scripts/comic-gen.mjs` 复现（需自备 MiniMax API key）。*
+*想要更精确的架构图？见[图解手册](diagrams.zh.md)。想系统学完整个 Harness？见[《智能餐厅经营手册》漫画书](harness-book.zh.html)（23 幅 · 15 章）。想动手跑起来？见[学习指南](learn.html)。漫画可由 `node scripts/comic-gen.mjs` 复现（需自备 MiniMax API key）。*
