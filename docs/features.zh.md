@@ -241,7 +241,7 @@ CI 在 `.github/workflows/ci.yml`（pnpm + Node 24 + 冻结锁表安装 + 构建
 
 Loom 在 dsh-plugin 生态中既是**消费者**也是**生产者**——详见 [docs/plugin-ecosystem.zh.md](docs/plugin-ecosystem.zh.md)：
 
-- **消费**（全部钉精确 `0.1.0-rc.6`）：`dsh-session-query-sqlite` + `dsh-tool-session-query`（模型面 session_search 会话历史检索，带 key e2e 证明模型真实调用）与 `dsh-host-frontend-static`（`loom start` 的生产静态服务，占 webserver 的 SPA fallback 单席；已验证：同端口 `/` 200、SPA 回落 200、health 200、穿越 403、非 GET 405）。评估未接入：`dsh-session-log-export`（浏览器 /export ZIP 命令，与 Loom 程序化 --slim 管线非同构）。
+- **消费**（全部钉精确 `0.1.1-rc.1`）：`dsh-session-query-sqlite` + `dsh-tool-session-query`（模型面 session_search 会话历史检索，带 key e2e 证明模型真实调用）与 `dsh-host-frontend-static`（`loom start` 的生产静态服务，占 webserver 的 SPA fallback 单席；已验证：同端口 `/` 200、SPA 回落 200、health 200、穿越 403、非 GET 405）。评估未接入：`dsh-session-log-export`（浏览器 /export ZIP 命令，与 Loom 程序化 --slim 管线非同构）。
 - **生产**（workspace 包，本阶段不发布 npm）：[`dsh-python-tools`](../packages/python-tools)——Python 工具桥（含 openapi-import 复用的 jsonSchemaToDsl 转换器）；[`dsh-web-approval-answerer`](../packages/web-approval-answerer)——SSE 审批 answerer（重连留档重发、并发 409、超时 fail-closed）。两包均带 `dsh-plugin` 关键字、MIT、中英 README、独立单测；compose 从 `@loom-sdk/web` 的依赖关系解析入口 URL，应用侧无需声明依赖。
 - **钉版纪律**：所有 `@deepseek-ai/*` 依赖一律写死精确版本。事实：这些包的 npm `latest` dist-tag 目前普遍指向旧的 `0.0.1-rc.x`（rc.1/rc.3/rc.5），浮动解析会静默装到半年前的版本。升级（如未来的 rc.7）是事件不是漂移：整批同升 + 全量 e2e 通过才合入，禁止混版。
 

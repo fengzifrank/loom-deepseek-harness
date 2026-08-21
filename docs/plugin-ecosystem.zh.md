@@ -20,14 +20,16 @@
   但"把审批缝路由成宿主 Web 前端审批卡"的 answerer 无先例，
   `dsh-web-approval-answerer`（M8 剥离）同样占生态位第一件；
 - **rc 漂移风险**：官方包的 npm `latest` dist-tag 普遍**落后于实际可用版本**
-  （实测：dsh-tool-session-query / dsh-session-query / dsh-session-query-sqlite
-  的 latest 指向 0.0.1-rc.1，dsh-host-frontend-static 指向 0.0.1-rc.3，
-  dsh-session-log-export 指向 0.0.1-rc.5，而 Loom 消费的是 0.1.0-rc.6）。
+  （2026-08-21 实测：dsh-tool-session-query / dsh-session-query /
+  dsh-session-query-sqlite 的 latest 指向 0.0.1-rc.1，dsh-host-frontend-static
+  指向 0.0.1-rc.3，dsh-session-log-export 指向 0.0.1-rc.5，连 dsh-app-boot 的
+  latest 也只指向 0.1.0-rc.6，而 Loom 当前钉的是 `0.1.1-rc.1`，全部经由
+  `next` dist-tag 发布）。
   不钉版装 `latest` 会装到半年前的旧版——这是钉版纪律的直接动因。
 
 ## 二、消费侧清单（Loom 组合里的官方插件）
 
-`loom dev`/`loom start` 生成的 `cordis.yml` 中的官方件（全部钉 `0.1.0-rc.6`）：
+`loom dev`/`loom start` 生成的 `cordis.yml` 中的官方件（全部钉 `0.1.1-rc.1`）：
 
 | 插件 | 用途 | 引入阶段 |
 | --- | --- | --- |
@@ -50,7 +52,7 @@
   `GET /` 200（text/html）、SPA 回落 `GET /villages/...` 200（index.html）、
   `GET /~loom/health` 200、非 GET 405、编码穿越 `..%5c` 403。
 
-**评估过但不接入**：`@deepseek-ai/dsh-session-log-export`（0.1.0-rc.6 存在）。
+**评估过但不接入**：`@deepseek-ai/dsh-session-log-export`（0.1.1-rc.1 存在）。
 它是浏览器侧 `/export` 聊天命令（Session log ZIP 下载，经 ApiProxy 宿主端点），
 与 Loom `loom eval --slim` 的**程序化** slim 转录导出（纯函数管线，服务端读
 jsonl 折叠成夹具）非同构——不适配，不替换，记录在此。
@@ -78,10 +80,13 @@ file:/// URL——应用侧无需直接声明依赖。
 
 ## 四、供应链纪律（钉版策略）
 
-1. **一律精确钉版**：所有 `@deepseek-ai/*` 依赖写死 `0.1.0-rc.6`（无 `^`/`~`）。
-   事实依据：npm `latest` dist-tag 普遍指向旧版（0.0.1-rc.1/rc.3/rc.5），
-   浮动解析会**静默降级**到功能缺失的半年前版本；
-2. **升级是事件，不是漂移**：升 rc.7（或正式版）必须整批同升 + 全量 e2e
+1. **一律精确钉版**：所有 `@deepseek-ai/*` 依赖写死 `0.1.1-rc.1`（无 `^`/`~`）。
+   事实依据：npm `latest` dist-tag 普遍指向旧版（0.0.1-rc.1/rc.3/rc.5，
+   dsh-app-boot 也仅指 0.1.0-rc.6），浮动解析会**静默降级**到功能缺失的
+   半年前版本；
+2. **升级是事件，不是漂移**：升级（2026-08-21 已按此纪律完成
+   0.1.0-rc.6 → 0.1.1-rc.1 整批同升，后续如 0.1.1-rc.2/正式版同理）必须
+   整批同升 + 全量 e2e
    （`pnpm test`：单测 + 无 key 冒烟 + 带 key 审批链/委派/webhook/session_search/
    path-memory 全链），green 才合入；禁止只升个别包（内核件之间有协议耦合，
    混版是未定义行为）；

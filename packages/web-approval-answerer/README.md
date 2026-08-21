@@ -43,7 +43,7 @@ callSeqOf(sessionId, callId), timeoutMs? }`；插件每次请求惰性解析，�
 ### 钉版
 
 peer：`@deepseek-ai/cordis` ^4.0.1；运行时仅依赖 `@deepseek-ai/schemastery`
-3.18.1。与内核 rc 线同测版本：0.1.0-rc.6（npm latest tag 指向旧版
+3.18.1。与内核 rc 线同测版本：0.1.1-rc.1（npm latest tag 指向旧版
 0.0.1-rc.1，勿裸装 latest）。
 
 ## English
@@ -63,7 +63,7 @@ route (identity gating is a host concern), delegating verdicts to the
 ### Pinning
 
 Peer `@deepseek-ai/cordis` ^4.0.1; runtime dep `@deepseek-ai/schemastery`
-3.18.1. Tested against the kernel rc line 0.1.0-rc.6 (npm `latest` points at
+3.18.1. Tested against the kernel rc line 0.1.1-rc.1 (npm `latest` points at
 the stale 0.0.1-rc.1 — never install bare `latest`).
 
 ## License

@@ -34,7 +34,7 @@ Python 侧用 loom-py 协议：`initialize` 互验 `{protocol:'loom-py', version
 ### 钉版
 
 peer：`@deepseek-ai/cordis` ^4.0.1；依赖 `@deepseek-ai/dsh-tools` 钉
-0.1.0-rc.6（内核 rc 线 npm latest tag 指向旧版 0.0.1-rc.1，勿裸装 latest）。
+0.1.1-rc.1（内核 rc 线 npm latest tag 指向旧版 0.0.1-rc.1，勿裸装 latest）。
 
 ## English
 
@@ -58,7 +58,7 @@ direct-call diagnostics.
 ### Pinning
 
 Peer `@deepseek-ai/cordis` ^4.0.1; `@deepseek-ai/dsh-tools` pinned to
-0.1.0-rc.6 (the rc line's npm `latest` tag points at the stale 0.0.1-rc.1 —
+0.1.1-rc.1 (the rc line's npm `latest` tag points at the stale 0.0.1-rc.1 —
 never install bare `latest`).
 
 ## License
