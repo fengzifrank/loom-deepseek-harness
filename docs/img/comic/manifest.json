@@ -1,0 +1,22 @@
+[
+  {
+    "id": "01-intent-vs-process",
+    "model": "image-01-live",
+    "seed": 20260821,
+    "apiId": "06d79d66fdd9c209f0b09901952f163f",
+    "ext": "jpg",
+    "bytes": 370694,
+    "ms": 9002,
+    "prompt": "Split-scene comic panel with two halves. LEFT half: a young man with short black hair wearing a blue shirt and a small backpack looks overwhelmed and panicking in a messy kitchen, holding a long paper checklist covered in flowchart arrows and boxes, a pot boiling over behind him. RIGHT half: the same a young man with short black hair wearing a blue shirt and a small backpack sits relaxed at a clean restaurant table, calmly speaking to a service terminal, while in the background a chubby friendly chef with a tall white chef hat and a red apron cooks confidently. Japanese manga art style, clean bold outlines, expressive faces, warm colors, soft restaurant lighting. Absolutely no text, no words, no letters, no numbers, no captions anywhere in the image."
+  },
+  {
+    "id": "08-modular-kitchen",
+    "model": "image-01-live",
+    "seed": 20260821,
+    "apiId": "06d79daecf3b3a02423185ad954de0d8",
+    "ext": "jpg",
+    "bytes": 337274,
+    "ms": 9668,
+    "prompt": "A comic-style restaurant kitchen where the stove, the refrigerator and the chef workstation are each installed inside separate large crates with handles and wheels, like swap-in modules. A maintenance worker with a wrench slides one whole module crate out on rails, replacing it with a new identical-size module crate. On the wall, the wooden menu board and a thick blue hardcover ledger book under a glass dome remain completely untouched. Japanese manga art style, clean bold outlines, expressive faces, warm colors, soft restaurant lighting. Absolutely no text, no words, no letters, no numbers, no captions anywhere in the image."
+  }
+]

@@ -128,6 +128,7 @@ Scaffolding a new app / production deploy / headless API checks: see the Quickst
 |---|---|
 | **Learn by diagrams** (13 Mermaid + 2 SVG) | [diagram gallery](docs/diagrams.zh.md) (Chinese) |
 | **Getting started** (10-min / first app / API cheat sheet / FAQ) | [learn.html](docs/learn.html) (open in any browser, Chinese) |
+| **🖼 Comic intro** (8 panels · the smart restaurant) | [comic](docs/comic.zh.md) (Chinese) |
 | Deep design (axioms / API-to-kernel mapping / competitor matrix) | [whitepaper](docs/whitepaper.zh.md) (Chinese) |
 | Feature deep-dives (M2-M8 chapters) | [features](docs/features.md) |
 | Status & roadmap | [status](docs/status.md) |
