@@ -63,14 +63,14 @@ footer{padding:40px 0 60px;text-align:center;color:var(--muted);font-size:13px}
 
 <nav><div class="inner">
   <div class="logo">📖 智能奶茶<span>店经营手册</span></div>
-  <a href="#ch1">为什么</a><a href="#ch2">插件</a><a href="#ch3">开业</a><a href="#ch4">换团队</a><a href="#ch5">轮回</a><a href="#ch6">关口</a><a href="#ch7">账本</a><a href="#ch8">便签</a><a href="#ch9">配方卡</a><a href="#ch10">外包</a><a href="#ch11">包间</a><a href="#ch12">承包</a><a href="#ch13">三面孔</a><a href="#ch14">直播</a><a href="#ch15">插座</a><a href="#grad">毕业</a>
+  <a href="#ch1">为什么</a><a href="#ch2">插件</a><a href="#ch3">开业</a><a href="#ch4">换团队</a><a href="#ch5">轮回</a><a href="#ch6">关口</a><a href="#ch7">账本</a><a href="#ch8">便签</a><a href="#ch9">配方卡</a><a href="#ch10">外包</a><a href="#ch11">包间</a><a href="#ch12">承包</a><a href="#ch13">三面孔</a><a href="#ch14">直播</a><a href="#ch15">插座</a><a href="#ch16">开店</a><a href="#ch17">小程序</a><a href="#ch18">考卷</a><a href="#ch19">菜单册</a><a href="#ch20">Python大厨</a><a href="#ch21">熟客</a><a href="#ch22">会员闸</a><a href="#ch23">质检</a><a href="#grad">毕业</a>
 </div></nav>
 
 <main>
 
 <!-- ============ COVER ============ -->
 <div class="cover">
-  <div class="badges"><span class="badge go">DeepSeek Harness 漫画书 · 奶茶版</span><span class="badge">23 幅漫画 · 15 章</span><span class="badge">新手🐣 / 老手🦉 双轨</span></div>
+  <div class="badges"><span class="badge go">DeepSeek Harness 漫画书 · 奶茶版</span><span class="badge">34 幅漫画 · 四部 23 章</span><span class="badge">新手🐣 / 老手🦉 双轨</span></div>
   <h1>智能奶茶店<em>经营手册</em></h1>
   <p class="sub">一家奶茶店的完整解剖：<b style="color:#fff">配方不变，换谁来摇这杯茶，味道都不变</b>——这句行话，就是 DeepSeek Harness 契约哲学的全部。<br>从"顾客说一句就出杯"到"一条大街开满同标准的奶茶店"，15 章讲完整个内核。<br><b style="color:#fff">新手</b>只看漫画和🐣绿框；<b style="color:#fff">老手</b>加看🦉紫框直达源码。</p>
   <div class="cast">
@@ -276,6 +276,104 @@ footer{padding:40px 0 60px;text-align:center;color:var(--muted);font-size:13px}
   </div>
   <img class="panel" src="img/comic/08-modular-kitchen.jpg" alt="模块化操作台"><div class="caption">终章回顾：煮茶机/封口机/小料台皆模块——菜单与账本不动</div>
   <div class="quote">金句：<b>标准插座让风味自由流动，安全罩让风险透明可控——开放与稳妥可以兼得。</b></div>
+</section>
+
+<!-- ============ PART 4 ============ -->
+<div class="part"><div class="pt">PART 4</div><h2>Loom 篇 · 把内核开成你的店</h2><p class="lead">前三部讲的是"店怎么运转"（内核）；这一部讲"Loom 怎么帮你把店开起来、管起来、联起来"（框架层）。</p></div>
+
+<section id="ch16">
+  <h2><span class="no">16</span>一条命令开店</h2>
+  <img class="panel" src="img/comic/24-loom-dev.jpg" alt="一条命令开店"><div class="caption">店长一拍手：操作台、取餐屏、菜单板一起亮——改配方时旧版继续卖，影子店验讫新版才接班</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>开店不用请施工队：<b>一条命令</b>，后厨+取餐屏+菜单板全亮。最妙的是改配方卡的时候——<b>旧配方继续出杯不打烊</b>，影子店在旁边按新配方试做，试好了才无缝切换；试砸了？旧店照常营业，你重新改。</div>
+    <div class="box owl"><h4>🦉 老手看</h4><code>loom dev</code> 一条命令拉起智能体服务+前端（自动检测 vite）；<b>热重载保旧</b>：改 loom.app.ts 先做模块级预检（语法/声明期错误不打扰旧进程），预检过才重启 worker，失败保旧并打印错误。生产同形态：<code>loom build && loom loom start</code> 一进程一端口（<code>packages/web/src/cli.ts</code>）。</div>
+  </div>
+  <img class="panel" src="img/comic/25-scaffold.jpg" alt="模板克隆新店"><div class="caption">一张模板页复印出一家迷你新店——拎箱即走，找个档口就能开</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>想开第二家店？不用从画图纸开始：把<b>模板页</b>塞进复印机，出来一家装在纸箱里的迷你新店——吧台、菜单、一位奶茶师，全齐，找个档口摆下就能营业。</div>
+    <div class="box owl"><h4>🦉 老手看</h4><code>loom new my-app</code> 脚手架：生成 18 行可聊天的完整应用（1 工具+1 agent+前端骨架+配置），<code>pnpm i && pnpm loom dev</code> 即跑——零配置起步、声明文件即全部真相（<code>packages/web/src/scaffold.ts</code>）。</div>
+  </div>
+  <div class="quote">金句：<b>开店一声令下，改配方不打烊——旧版继续卖，新版验讫才接班。</b></div>
+</section>
+
+<section id="ch17">
+  <h2><span class="no">17</span>改配方，小程序先知道</h2>
+  <img class="panel" src="img/comic/26-typed-client.jpg" alt="类型化客户端"><div class="caption">经理刚改墙上的配方卡——顾客手机上的点单屏立刻弹出红色警示</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>配方卡改了（比如"糖度从 5 档变 3 档"），谁第一个知道？不是顾客投诉，是<b>小程序屏幕自己先红了</b>——因为小程序是照着配方卡的样子生成的，卡一变，屏幕和卡对不上号，当场报警。<b>问题拦在出厂前，不等线上炸。</b></div>
+    <div class="box owl"><h4>🦉 老手看</h4><code>loom client</code> 从工具声明生成前端类型化客户端（<code>packages/web/src/client-gen.ts</code>）：改了 schema 没重新生成 → CI 的新鲜度门（<code>git diff --exit-code</code>）直接挂；生成后 TypeScript 编译期即红。这是"一份声明三张面孔"的第三张脸的兑现。</div>
+  </div>
+  <div class="quote">金句：<b>后端改配方，小程序先叫疼——编译期就红，别等线上炸。</b></div>
+</section>
+
+<section id="ch18">
+  <h2><span class="no">18</span>账本变考卷</h2>
+  <img class="panel" src="img/comic/27-transcript-eval.jpg" alt="账本变考卷"><div class="caption">阅卷机器人把账本复印页当考卷批——没人做茶，昨天的杯却在被重新验证</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>最聪明的省钱术：把<b>昨天真实干活的账本复印成考卷</b>，让阅卷机器人重放批改——"这一单审批顺序对不对？拒绝后库存确实没动吧？"没人做茶、不花一分钱模型费，<b>昨天的每一单都变成了今天的回归测试</b>。真跑越多，考卷越厚，回归网越密。</div>
+    <div class="box owl"><h4>🦉 老手看</h4><code>loom eval</code>（<code>packages/web/src/eval.ts</code>）：会话日志 slim 后（折叠流式增量）变夹具，<code>defineEval({assert})</code> 断言审批流/工具链/结局——CI 零网络零 key 纯重放（真实夹具 5 组跑 1ms 级）。"transcript is the contract"的测试侧兑现。</div>
+  </div>
+  <div class="quote">金句：<b>昨天的账本，今天的考卷——真实运行自动变成回归测试。</b></div>
+</section>
+
+<section id="ch19">
+  <h2><span class="no">19</span>菜单册的双向生意</h2>
+  <img class="panel" src="img/comic/28-openapi-dual.jpg" alt="OpenAPI 双轨"><div class="caption">左：老店的落灰说明书一键变本店新配方卡；右：本店菜单自动印成行业标准册，全街来抄</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>两个方向的生意：<b>进货</b>——隔壁老店有本落灰的操作说明书（OpenAPI 文档），塞进机器，哗啦吐出一排能直接上墙的新配方卡（agent 工具），老店一行不用改；<b>出货</b>——本店菜单自动印成<b>行业标准菜单册</b>，全街的店、外部的平台都能照着接你的单。</div>
+    <div class="box owl"><h4>🦉 老手看</h4><code>loom openapi</code> 导出确定性 OpenAPI 3.1.0 + 运行时活文档端点（与离线生成物逐字节一致，永不漂移）；<code>loom import-openapi</code> 反向生成工具声明（$ref 展开/allOf 合并/覆盖不了的<b>诚实降级留 WARN</b>；写操作自动建议配审批）——fastapi-admin 案例实录：1k★ 真实项目零改动接入（<code>packages/web/src/openapi-{gen,import}.ts</code>）。</div>
+  </div>
+  <div class="quote">金句：<b>老店的说明书一键变新工具，自家的菜单册让全街都来抄。</b></div>
+</section>
+
+<section id="ch20">
+  <h2><span class="no">20</span>隔壁的 Python 大厨</h2>
+  <img class="panel" src="img/comic/29-python-bridge.jpg" alt="Python 大厨"><div class="caption">穿蛇纹围裙的大厨在店外透明小屋打工，成果经小窗递进店——本店账本照记、质检照过</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>有些活 Python 大厨最拿手（数据分析/算法/科学计算）。他不用进店：在店外的<b>透明小屋</b>里打工，做好的配料经小窗递进来——每一样进店都<b>照常过质检、照常记账</b>；小屋塌了，店会自动帮他重搭（最多三次），搭不起来就明说，绝不假装还在营业。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>Python 工具桥（<code>packages/python-tools</code>，已抽出为独立生态插件 dsh-python-tools）：stdio JSON-Lines 协议（握手→清单→调用→取消）；<code>@tool</code> 装饰器类型注解自动转 schema；<b>治理不降级</b>——审批在转发前的 TS 管线、结果照落会话日志、崩溃自动重启（上限 3 fail-loud）。</div>
+  </div>
+  <div class="quote">金句：<b>Python 大厨不进店，也能用本店的账本和质检——两种语言，同一套规矩。</b></div>
+</section>
+
+<section id="ch21">
+  <h2><span class="no">21</span>熟客偏好与老配方</h2>
+  <img class="panel" src="img/comic/30-memory-layers.jpg" alt="记忆三层柜"><div class="caption">三层卡片柜：今日闲聊 / 熟客偏好卡 / 成功配方路线卡——开工前先翻中间那格</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>好店记得住熟客：<b>"这位小姐上次要的是三分糖去冰"</b>。记忆分三层：今天的对话（当天有效）、<b>偏好卡</b>（长期有效：甜度/口味/忌口）、<b>老配方</b>（某类单子的成功做法）。熟客再进门，奶茶师开工前先翻偏好卡——不用重新问一遍。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>loom memory 三层（<code>packages/web/src/memory{,-store}.ts</code>）：会话内=内核白送；语义记忆=mem0 两阶段（提取→与相似旧记忆比对 ADD/UPDATE/DELETE/NOOP）+ SQLite FTS5 按用户隔离召回（<code>form:'recall'</code> 注入）；提取花 token 所以默认关、agent 显式 <code>memory:true</code>。</div>
+  </div>
+  <img class="panel" src="img/comic/31-path-memory.jpg" alt="路径记忆"><div class="caption">失败的单子→翻出带奖杯标志的老配方→先试一小口验过→再照着做；角落里风化的旧卡被清扫</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>这单做砸了（红旗）？翻出<b>以前做成功的老配方路线卡</b>——但规矩是：<b>先试做一小口验过</b>（原料还在吗？步骤还行得通吗？），验过才照着做。验成了卡片更新鲜；验砸了降权；连着砸就归档。角落里那些落满灰的老卡——<b>没人维护的路，自己会荒掉</b>。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>Path Memory（M8）：工具图签名去重（工具名+参数形状，不含值）；失败触发检索"待重验路径"注入；重验回写 confidence +0.1/×0.5、&lt;0.3 软删、时间衰减惰性求值——"能量竞争"的最小实现（设计文档 <code>docs/path-memory.zh.md</code>）。</div>
+  </div>
+  <div class="quote">金句：<b>记住熟客的甜度，翻出老配方先试一口——记忆有温度，路径会风化。</b></div>
+</section>
+
+<section id="ch22">
+  <h2><span class="no">22</span>会员闸机与外卖机器人</h2>
+  <img class="panel" src="img/comic/32-multi-user.jpg" alt="会员闸机"><div class="caption">两位会员各有专属柜；张三望向李四的柜区——只看到一面白墙</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>进门刷卡（匿名也发临时卡）：每位会员有自己的<b>专属柜</b>（会话/偏好/审批单）。张三想看李四的柜？<b>他看到的是一面白墙</b>——不是"禁止入内"的牌子，是"这里什么都没有"。连存在都不告诉你，这才是隔离的极致。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>多用户（<code>packages/web/src/auth.ts</code>）：匿名 UUID + 本地账号（scrypt+HMAC token，零依赖）；他人资源一律 <b>404 不泄露存在性</b>；审批只认 owner；QA 修过的高危漏洞即在此线：匿名身份禁用 <code>user-</code> 前缀冒充注册用户。</div>
+  </div>
+  <img class="panel" src="img/comic/33-webhook-channel.jpg" alt="外卖机器人"><div class="caption">门口的接单机器人验收各平台骑手送来的单，盖蜡章排进队列</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>不只顾客上门：外卖平台（GitHub/监控告警/微信）的骑手把订单送到门口，<b>接单机器人先验蜡章</b>（签名不对拒收），验过盖上章排进队伍——奶茶师按序处理，跟堂食一个待遇（审批/记账/回放一样不少）。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>webhook 通道（<code>packages/web/src/webhook.ts</code>）：HMAC-SHA256 签名 + timingSafeEqual（防篡改；防重放为 documented 边界）；sessionKey 复用会话（同 topic 续聊）；202 秒回异步处理，进度走既有 SSE。</div>
+  </div>
+  <div class="quote">金句：<b>你的柜子别人看不见——连"有没有"都不告诉他。</b></div>
+</section>
+
+<section id="ch23">
+  <h2><span class="no">23</span>出厂六道门</h2>
+  <img class="panel" src="img/comic/34-ci-gates.jpg" alt="六道质检门"><div class="caption">配料核对→装配→试摇→验章→对菜单册→重放账页——全绿旗才出厂</div>
+  <div class="dual">
+    <div class="box bird"><h4>🐣 新手看</h4>每次上新（改代码），一批货要过<b>六道质检门</b>：配料表核对、装配检查、试摇一杯、验章、对菜单册（跟最新版一致吗？）、重放账页（昨天的好单今天还能过吗？）。<b>全绿旗升起才准出厂</b>——任何一道红灯，整批退回。</div>
+    <div class="box owl"><h4>🦉 老手看</h4>CI 六门（<code>.github/workflows/ci.yml</code>）：install(--frozen-lockfile)→build→typecheck×3→test 全量→<b>client 新鲜度门</b>→<b>openapi 新鲜度门</b>→eval 5/5；有 secret 时加真 key e2e。配套<b>钉版纪律</b>：npm latest 常指旧版是陷阱，全族精确钉版本，升级必全量 e2e（2026-08 的 0.1.1-rc.1 升级实测：34 包零破坏——纪律的回报）。</div>
+  </div>
+  <div class="quote">金句：<b>六道门全绿才出厂——改了配方忘了换册子？门神不答应。</b></div>
 </section>
 
 <!-- ============ GRADUATION ============ -->

@@ -28,5 +28,15 @@
     "bytes": 336527,
     "ms": 31126,
     "prompt": "In the corner of a cozy modern bubble tea shop with jars of dark tapioca pearls, steel shaker cups, tea brewing machines and colorful sealed plastic cups stands a transparent safety dome over a tea experiment station; inside the dome, a small controlled risky new-recipe experiment brews with sparkles safely contained. a strict manager in a dark suit holding a clipboard watches through the glass with a clipboard, and a red lever next to the dome can shut everything down instantly. Japanese manga art style, clean bold outlines, expressive faces, warm colors, soft lighting. Absolutely no text, no words, no letters, no numbers, no captions anywhere in the image."
+  },
+  {
+    "id": "34-ci-gates",
+    "model": "image-01-live",
+    "seed": 20260822,
+    "apiId": "06d8b917c20ae96c56a05e5d3140939f",
+    "ext": "jpg",
+    "bytes": 348502,
+    "ms": 11279,
+    "prompt": "A factory-style quality inspection conveyor line at the back door of a cozy modern bubble tea shop with jars of dark tapioca pearls, steel shaker cups, tea brewing machines and colorful sealed plastic cups with six checkpoint gates in a row, each staffed by a small robot: gate one checks an ingredient list with a magnifier, gate two assembles cup parts, gate three test-shakes a sample cup, gate four verifies stamps and seals, gate five cross-checks the printed menu booklet, gate six replays ledger pages on a mini screen. A big green flag rises at the end of the line. Japanese manga art style, clean bold outlines, expressive faces, warm colors, soft lighting. Absolutely no text, no words, no letters, no numbers, no captions anywhere in the image."
   }
 ]

@@ -136,6 +136,50 @@ const PANELS = [
     id: '23-safety-dome',
     prompt: `In the corner of ${CHARS.shop} stands a transparent safety dome over a tea experiment station; inside the dome, a small controlled risky new-recipe experiment brews with sparkles safely contained. ${CHARS.manager} watches through the glass with a clipboard, and a red lever next to the dome can shut everything down instantly. ${CHARS.style}`,
   },
+  {
+    id: '24-loom-dev',
+    prompt: `${CHARS.manager} claps hands once and the entire ${CHARS.shop} lights up in one go: tea brewing machines, pickup screens and menu board all boot together from one big switch. Meanwhile on the right side, ${CHARS.barista} edits a recipe card, and the OLD recipe keeps serving cups on the left while a ghostly shadow copy of the shop tests the NEW card on the right before switching over seamlessly. ${CHARS.style}`,
+  },
+  {
+    id: '25-scaffold',
+    prompt: `A magical blueprint photocopier on the street: ${CHARS.manager} inserts one single template page, and the machine produces a complete tiny new bubble tea shop in a cardboard box, with a mini counter, a mini menu board and one mini barista doll coming alive, ready to open. ${CHARS.customer} watches amazed. ${CHARS.style}`,
+  },
+  {
+    id: '26-typed-client',
+    prompt: `Close-up scene: ${CHARS.customer} holds a smartphone showing a drink ordering interface with cup icons; ${CHARS.manager} has just changed a recipe card on the wall of ${CHARS.shop}, and instantly the phone screen displays a bold red warning triangle with a crossed-out cup icon, connected by a glowing arrow back to the changed recipe card. ${CHARS.style}`,
+  },
+  {
+    id: '27-transcript-eval',
+    prompt: `A grading robot sits at a wooden desk reading photocopied pages of ${CHARS.ledger} like an exam paper, stamping green check marks on each page with a big rubber stamp; nobody is cooking, yet sealed cups from the past float above the pages being re-verified one by one. Shelves of copied exam papers line the wall. ${CHARS.style}`,
+  },
+  {
+    id: '28-openapi-dual',
+    prompt: `Split panel with two halves. LEFT: ${CHARS.manager} takes a dusty old instruction manual from a neighboring old-fashioned tea shop and slides it into a converting machine, which outputs shiny new standardized recipe cards that fly onto this shop's menu wall. RIGHT: this shop's menu board automatically prints itself into a neat standardized industry menu booklet, and shopkeepers from other stalls on the street eagerly grab copies. ${CHARS.style}`,
+  },
+  {
+    id: '29-python-bridge',
+    prompt: `Outside the window of ${CHARS.shop}, a friendly chef wearing a snake-patterned apron works in a small transparent glass booth; he passes finished topping trays and syrup bottles through a small service window; ${CHARS.barista} receives them on the other side and records everything into ${CHARS.ledger}; a repair toolbox sits beside the booth. ${CHARS.style}`,
+  },
+  {
+    id: '30-memory-layers',
+    prompt: `A wooden card catalog cabinet with three drawers of different sizes inside ${CHARS.shop}: a thin top drawer holding today's chat slips, a medium middle drawer holding regular-customer preference cards marked with sugar-level and ice icons, and a thick bottom drawer holding successful recipe route cards. ${CHARS.barista} opens the middle drawer and reads a preference card before starting a new cup for a familiar customer. ${CHARS.style}`,
+  },
+  {
+    id: '31-path-memory',
+    prompt: `A failed cup with a red flag sits on the counter of ${CHARS.shop}; ${CHARS.barista} pulls an old recipe route card from a box labeled with a trophy icon, carefully tastes a tiny sample from a small spoon first to verify, then follows the card's steps. In the corner, some very dusty faded old cards are being swept into a recycle bin by a small robot. ${CHARS.style}`,
+  },
+  {
+    id: '32-multi-user',
+    prompt: `An elegant entrance gate of ${CHARS.shop} with membership card readers; two customers, a young woman and a young man, each pass through and reach their own private glowing lockers in their own distinct colors. When the man peeks toward the woman's locker area, he sees only a smooth blank wall, as if nothing exists there at all. ${CHARS.style}`,
+  },
+  {
+    id: '33-webhook-channel',
+    prompt: `At the entrance of ${CHARS.shop}, a small cute delivery robot with antenna receives sealed order bags from external delivery platform couriers in different colored uniforms; the robot stamps each bag with a wax seal and places them into an orderly queue rack that feeds directly into the tea bar workflow, where ${CHARS.barista} picks up the next stamped order. ${CHARS.style}`,
+  },
+  {
+    id: '34-ci-gates',
+    prompt: `A factory-style quality inspection conveyor line at the back door of ${CHARS.shop} with six checkpoint gates in a row, each staffed by a small robot: gate one checks an ingredient list with a magnifier, gate two assembles cup parts, gate three test-shakes a sample cup, gate four verifies stamps and seals, gate five cross-checks the printed menu booklet, gate six replays ledger pages on a mini screen. A big green flag rises at the end of the line. ${CHARS.style}`,
+  },
 ]
 
 /** 带退避的生成调用 */
