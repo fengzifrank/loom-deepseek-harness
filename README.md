@@ -130,6 +130,7 @@ Scaffolding a new app / production deploy / headless API checks: see the Quickst
 | **Getting started** (10-min / first app / API cheat sheet / FAQ) | [learn.html](docs/learn.html) (open in any browser, Chinese) |
 | **🖼 Comic intro** (8 panels · the smart bubble tea shop) | [comic](docs/comic.zh.md) (Chinese) |
 | **📖 Comic book** (23 panels · 15 chapters, beginner/expert dual track, covers the whole Harness) | [harness-book](docs/harness-book.zh.html) (Chinese) |
+| **🎮 Teaching game** (Phaser 3 · 8 levels · consequences-first; run a smart bubble tea shop) | [game](docs/game.html) (Chinese) |
 | Deep design (axioms / API-to-kernel mapping / competitor matrix) | [whitepaper](docs/whitepaper.zh.md) (Chinese) |
 | Feature deep-dives (M2-M8 chapters) | [features](docs/features.md) |
 | Status & roadmap | [status](docs/status.md) |

@@ -1,0 +1,12 @@
+[
+  {
+    "id": "scene-archive",
+    "model": "image-01-live",
+    "seed": 20260823,
+    "apiId": "06d905debebb555281d9ad9624ebdc0d",
+    "ext": "jpg",
+    "bytes": 536335,
+    "ms": 8989,
+    "prompt": "A cozy isometric archive room diorama: tall dark wooden shelves filled with thick colorful hardcover ledgers, a wooden ladder, a reading lectern with one open ledger and a warm desk lamp, rolling stacks of copied pages."
+  }
+]
