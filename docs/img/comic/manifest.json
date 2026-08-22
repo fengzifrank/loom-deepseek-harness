@@ -22,11 +22,11 @@
   {
     "id": "23-safety-dome",
     "model": "image-01-live",
-    "seed": 20260821,
-    "apiId": "06d7cf22762fa3c877a5bca57e581736",
+    "seed": 20260822,
+    "apiId": "06d8a44816f9efcbee85b6ba9f3cdec8",
     "ext": "jpg",
-    "bytes": 347091,
-    "ms": 8331,
-    "prompt": "In the corner of the kitchen stands a transparent safety dome over a cooking station; inside the dome, a small controlled risky experiment cooks with sparks safely contained. a strict manager in a dark suit holding a clipboard watches through the glass with a clipboard, and a red lever next to the dome can shut everything down instantly. Japanese manga art style, clean bold outlines, expressive faces, warm colors, soft restaurant lighting. Absolutely no text, no words, no letters, no numbers, no captions anywhere in the image."
+    "bytes": 336527,
+    "ms": 31126,
+    "prompt": "In the corner of a cozy modern bubble tea shop with jars of dark tapioca pearls, steel shaker cups, tea brewing machines and colorful sealed plastic cups stands a transparent safety dome over a tea experiment station; inside the dome, a small controlled risky new-recipe experiment brews with sparkles safely contained. a strict manager in a dark suit holding a clipboard watches through the glass with a clipboard, and a red lever next to the dome can shut everything down instantly. Japanese manga art style, clean bold outlines, expressive faces, warm colors, soft lighting. Absolutely no text, no words, no letters, no numbers, no captions anywhere in the image."
   }
 ]
