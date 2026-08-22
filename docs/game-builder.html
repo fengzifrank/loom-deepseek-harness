@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能奶茶店架构师 — 从零构建 DeepSeek Harness</title>
+<meta name="description" content="从零构建教学游戏：面对 8 个真实业务痛点，一步一步搭出完整的 DeepSeek Harness / Loom 架构图。痛点驱动 · 双面板实时生长 · Phaser 3。">
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js" onerror="window.__phaserFailed=true"></script>
+<style>
+:root{
+  --bg:#0b0f17;--bg2:#0f1522;--card:#141b2b;--card2:#1a2336;
+  --line:#243049;--text:#dbe4f3;--muted:#8a99b5;--accent:#4f8cff;--accent2:#7c5cff;
+  --ok:#3ecf8e;--warn:#f5b455;--err:#f07070;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:radial-gradient(1200px 700px at 50% -10%, #101a2e 0%, var(--bg) 55%);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  overflow:hidden;line-height:1.55;
+}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+button{font-family:inherit}
+.hidden{display:none!important}
+
+/* ============ 整体框架 ============ */
+#app{position:fixed;inset:0;display:flex;flex-direction:column;min-width:980px}
+header{
+  height:52px;flex-shrink:0;display:flex;align-items:center;gap:14px;padding:0 16px;
+  background:rgba(11,15,23,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);z-index:30;
+}
+#logo{font-weight:800;font-size:16px;color:#fff;white-space:nowrap}
+#logo span{color:var(--accent)}
+#logo-sub{font-size:12px;color:var(--muted);white-space:nowrap}
+#progress-wrap{display:flex;align-items:center;gap:8px;white-space:nowrap}
+#progress-chip{font-size:13px;font-weight:700;color:#fff;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:3px 10px}
+#progress-bar{width:120px;height:6px;border-radius:3px;background:var(--card2);overflow:hidden}
+#progress-fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s ease}
+#badges{display:flex;gap:5px;flex:1;justify-content:center;min-width:0;overflow-x:auto;scrollbar-width:none}
+#badges::-webkit-scrollbar{display:none}
+.bdg{
+  width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:15px;background:var(--card);border:1px solid var(--line);filter:grayscale(1);opacity:.35;
+  transition:all .4s;flex-shrink:0;cursor:default;
+}
+.bdg.lit{filter:none;opacity:1;border-color:rgba(62,207,142,.5);box-shadow:0 0 10px rgba(62,207,142,.15)}
+.bdg.cur{opacity:.95;filter:none;border-color:var(--accent);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(79,140,255,.4)}50%{box-shadow:0 0 0 6px rgba(79,140,255,0)}}
+#score-chip{font-family:var(--mono);font-size:13px;color:var(--ok);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 10px;white-space:nowrap}
+#mute-btn{background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--muted);padding:4px 9px;cursor:pointer;font-size:14px}
+#mute-btn:hover{color:#fff}
+#top-links{font-size:12px;color:var(--muted);white-space:nowrap}
+
+/* ============ 双面板主区 ============ */
+#main{flex:1;display:flex;gap:12px;padding:12px 12px 0;min-height:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;position:relative;min-width:0}
+#shop-view{flex:1.18}
+#arch-panel{flex:1}
+.panel-head{
+  height:36px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;
+  border-bottom:1px solid var(--line);font-size:13.5px;font-weight:700;color:#fff;background:var(--bg2);
+}
+.panel-head .sub{font-weight:400;font-size:11.5px;color:var(--muted)}
+.panel-head .right{margin-left:auto;font-weight:400;font-size:11.5px;color:var(--muted)}
+#shop-body{position:absolute;inset:36px 0 0 0}
+#shop-body canvas{display:block;border-radius:0 0 13px 13px}
+/* 店铺 HUD */
+#hud{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:75%;z-index:5;pointer-events:none}
+#hud .lv-chip{background:rgba(15,21,34,.85);border:1px solid var(--line);border-radius:9px;padding:4px 12px;font-size:13px;color:#fff;font-weight:700;backdrop-filter:blur(6px)}
+#hud .lv-chip em{font-style:normal;color:var(--accent);margin-right:6px}
+#hud .concept{background:rgba(124,92,255,.12);border:1px solid rgba(124,92,255,.35);color:#c9b8ff;border-radius:9px;padding:4px 12px;font-size:12px;backdrop-filter:blur(6px)}
+
+/* ============ 架构面板 SVG ============ */
+#arch-body{position:absolute;inset:36px 0 0 0;display:flex;align-items:center;justify-content:center;background:
+  radial-gradient(420px 300px at 50% 20%, rgba(79,140,255,.05), transparent 70%)}
+#arch-svg{width:100%;height:100%;max-height:100%}
+#arch-svg .edge{stroke:#5d7095;stroke-width:2;fill:none;opacity:0;transition:opacity .45s}
+#arch-svg .edge.grown{opacity:1;transition:opacity .45s, stroke-dashoffset .8s ease}
+#arch-svg .edge.flowing{stroke-dasharray:7 6;animation:march 1.1s linear infinite;stroke:#7fa7ff}
+@keyframes march{to{stroke-dashoffset:-26}}
+#arch-svg .elabel{font-size:9.5px;fill:#8a99b5;font-family:var(--mono);opacity:0;transition:opacity .6s .4s}
+#arch-svg.revealed .elabel{opacity:1}
+#arch-svg .node{opacity:0;transform:scale(.35);transform-box:fill-box;transform-origin:center;transition:opacity .55s,transform .55s cubic-bezier(.34,1.56,.64,1)}
+#arch-svg .node.on{opacity:1;transform:scale(1)}
+#arch-svg.instant .node,#arch-svg.instant .edge{transition:none!important}
+#arch-svg .node .box{fill:#18213a;stroke:var(--nc,#4f8cff);stroke-width:1.6;rx:11}
+#arch-svg .node .story{font-size:12.5px;font-weight:700;fill:#eaf0fb;transition:opacity .5s,transform .5s}
+#arch-svg .node .fw{font-size:11px;font-family:var(--mono);font-weight:700;fill:var(--nc,#4f8cff);opacity:0;transition:opacity .5s .25s}
+#arch-svg .node .tag{font-size:9px;fill:var(--muted);font-family:var(--mono)}
+#arch-svg .node .cap{font-size:9.5px;fill:#7d8ca8;opacity:0;transition:opacity .6s .45s}
+#arch-svg.revealed .node .story{opacity:0;transform:translateY(-9px)}
+#arch-svg.revealed .node .fw{opacity:1}
+#arch-svg.revealed .node .cap{opacity:1}
+#arch-svg .node.breath{animation:breathe 2.4s ease-in-out infinite}
+@keyframes breathe{
+  0%,100%{filter:drop-shadow(0 0 2px var(--nc))}
+  50%{filter:drop-shadow(0 0 10px var(--nc)) drop-shadow(0 0 18px var(--nc))}
+}
+#arch-svg .wall{opacity:0;transition:opacity .8s}
+#arch-svg .wall.on{opacity:1}
+#arch-svg .wall .wrect{fill:rgba(124,92,255,.035);stroke:#7c5cff;stroke-width:1.6;stroke-dasharray:9 6;rx:16}
+#arch-svg .wall .wlab-s{font-size:12px;font-weight:700;fill:#c9b8ff;transition:opacity .5s}
+#arch-svg .wall .wlab-f{font-size:11px;font-family:var(--mono);font-weight:700;fill:#c9b8ff;opacity:0;transition:opacity .5s .25s}
+#arch-svg.revealed .wall .wlab-s{opacity:0}
+#arch-svg.revealed .wall .wlab-f{opacity:1}
+#arch-svg .wall.breath{animation:breatheW 2.4s ease-in-out infinite}
+@keyframes breatheW{0%,100%{filter:drop-shadow(0 0 2px #7c5cff)}50%{filter:drop-shadow(0 0 12px #7c5cff)}}
+#arch-svg #arch-hint{transition:opacity .6s}
+#arch-svg #arch-hint.off{opacity:0}
+/* 面板红色拒绝闪烁 / 绿色成功光 */
+#arch-panel.deny{animation:deny .8s ease}
+@keyframes deny{0%,100%{box-shadow:none}25%,65%{box-shadow:0 0 0 2px rgba(240,112,112,.85),0 0 30px rgba(240,112,112,.35);border-color:var(--err)}}
+#arch-panel.accept{animation:accept .9s ease}
+@keyframes accept{0%,100%{box-shadow:none}40%{box-shadow:0 0 0 2px rgba(62,207,142,.7),0 0 30px rgba(62,207,142,.3);border-color:var(--ok)}}
+/* 毕业横幅（架构面板内） */
+#reveal-banner{
+  position:absolute;left:0;right:0;top:44px;text-align:center;z-index:6;pointer-events:none;
+  opacity:0;transform:translateY(14px) scale(.92);transition:all .9s cubic-bezier(.34,1.56,.64,1);
+}
+#reveal-banner.shown{opacity:1;transform:none}
+#reveal-banner h2{
+  font-size:21px;color:#fff;letter-spacing:1px;
+  background:linear-gradient(90deg,#ffd98a,var(--accent),var(--accent2));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:glowTitle 2.4s ease-in-out infinite;
+}
+@keyframes glowTitle{0%,100%{filter:drop-shadow(0 0 4px rgba(79,140,255,.3))}50%{filter:drop-shadow(0 0 14px rgba(124,92,255,.55))}}
+#reveal-banner p{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+/* ============ 事件日志 ============ */
+#event-log{
+  height:168px;flex-shrink:0;margin:12px;border:1px solid var(--line);border-radius:13px;
+  background:linear-gradient(180deg,rgba(13,19,32,.96),rgba(11,15,23,.98));
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#log-head{padding:7px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-size:13px;flex-shrink:0}
+#log-head b{color:#fff}
+#log-head .dot{width:8px;height:8px;border-radius:50%;background:var(--warn);animation:blink 1.1s infinite}
+@keyframes blink{0%,100%{opacity:.35}50%{opacity:1}}
+#log-cnt{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+#skip-btn{
+  background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--muted);
+  font-size:12px;padding:2px 10px;cursor:pointer;opacity:.45;pointer-events:none;transition:all .25s;
+}
+#skip-btn.on{opacity:1;pointer-events:auto;color:var(--text)}
+#skip-btn:hover{border-color:var(--accent);color:#fff}
+#log-body{flex:1;overflow-y:auto;padding:8px 14px;scrollbar-width:thin}
+#log-body::-webkit-scrollbar{width:6px}
+#log-body::-webkit-scrollbar-thumb{background:var(--card2);border-radius:3px}
+.ev{display:flex;gap:9px;align-items:flex-start;padding:2.5px 0;font-size:13.8px;animation:evIn .3s ease-out}
+@keyframes evIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.ev .ic{flex-shrink:0;width:18px;text-align:center;font-size:12px;color:var(--muted);margin-top:1px}
+.ev .tx{color:var(--text)}
+.ev.warn .ic{color:var(--warn)}.ev.warn .tx{color:#ffd9a0}
+.ev.bad .ic{color:var(--err)}.ev.bad .tx{color:#ff9c9c}
+.ev.good .ic{color:var(--ok)}.ev.good .tx{color:#8fe6c0}
+.ev.grow .ic{color:var(--accent)}.ev.grow .tx{color:#9ecbff;font-weight:700}
+.ev.sys .ic{color:var(--accent2)}.ev.sys .tx{color:#c9b8ff}
+.ev.sep{margin-top:5px;padding-top:6px;border-top:1px dashed var(--line)}
+.ev.sep .tx{font-size:12.5px;font-weight:800;color:#fff;letter-spacing:.5px}
+.ev .tx .cursor{color:var(--accent);animation:blink .8s infinite}
+
+/* ============ 选择区 ============ */
+#choice-area{
+  flex-shrink:0;margin:0 12px 12px;min-height:132px;
+  background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 16px;
+  display:flex;flex-direction:column;gap:10px;
+}
+#pain-line{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+#pain-line .pl-tag{
+  flex-shrink:0;font-size:12px;font-weight:800;color:var(--warn);white-space:nowrap;
+  background:rgba(245,180,85,.1);border:1px solid rgba(245,180,85,.35);border-radius:999px;padding:2px 11px;margin-top:1px;
+}
+#pain-text{color:var(--text)}
+#choices{display:flex;gap:12px}
+#choice-wait{color:var(--muted);font-size:13.5px;padding:8px 2px}
+.choice-btn{
+  flex:1;text-align:left;background:var(--card2);color:var(--text);
+  border:1px solid var(--line);border-radius:12px;padding:11px 15px;cursor:pointer;
+  font-size:14px;line-height:1.5;transition:all .18s;opacity:0;transform:translateY(12px);
+}
+.choice-btn.shown{opacity:1;transform:none}
+.choice-btn:hover:not(:disabled){border-color:var(--accent);background:rgba(79,140,255,.12);transform:translateY(-2px)}
+.choice-btn:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.6)}
+.choice-btn .key{
+  display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:6px;
+  background:var(--bg2);border:1px solid var(--line);font-size:11.5px;font-weight:800;color:var(--accent);
+  margin-right:8px;vertical-align:-3px;
+}
+.choice-btn .spark{
+  display:inline-block;font-size:11px;color:var(--warn);background:rgba(245,180,85,.1);
+  border:1px solid rgba(245,180,85,.35);border-radius:999px;padding:1px 8px;margin-left:8px;vertical-align:2px;
+}
+
+/* ============ 按钮 ============ */
+.btn{
+  font-size:14px;font-weight:700;color:#fff;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;
+  padding:9px 20px;transition:all .18s;box-shadow:0 4px 16px rgba(79,140,255,.25);
+}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 22px rgba(79,140,255,.35)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:var(--card2);border:1px solid var(--line);box-shadow:none;color:var(--text)}
+.btn.ghost:hover:not(:disabled){border-color:var(--accent);color:#fff}
+.btn.danger{background:linear-gradient(135deg,#c05050,#8f3838);box-shadow:0 4px 16px rgba(240,112,112,.2)}
+
+/* ============ 术语面板（底部抽屉） ============ */
+#terms{
+  position:fixed;left:0;right:0;bottom:0;z-index:35;
+  background:linear-gradient(180deg,rgba(16,24,39,.98),rgba(11,15,23,.99));
+  border-top:1px solid var(--accent);border-radius:18px 18px 0 0;
+  padding:18px 28px 16px;transform:translateY(105%);transition:transform .5s cubic-bezier(.22,1,.36,1);
+  box-shadow:0 -12px 50px rgba(0,0,0,.5);max-height:72%;overflow-y:auto;scrollbar-width:thin;
+}
+#terms.shown{transform:none}
+#terms h3{color:#fff;font-size:16.5px;margin-bottom:3px}
+#terms .t-sub{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.term-row{
+  display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:13.5px;flex-wrap:wrap;
+}
+.term-row .story{color:#f5b455;font-weight:700}
+.term-row .arrow{color:var(--muted);font-size:12.5px}
+.term-row .fw{color:#9ecbff;font-family:var(--mono);font-size:12.5px}
+.term-row .desc{color:var(--muted);font-size:12px;flex-basis:100%;padding-left:2px}
+#terms .readmore{display:inline-block;margin:3px 0 12px;font-size:13px}
+#nextbar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* ============ 全屏遮罩（片头/毕业） ============ */
+.screen{
+  position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(900px 600px at 50% 30%,rgba(79,140,255,.08),transparent 60%),rgba(9,12,19,.94);
+  backdrop-filter:blur(4px);overflow-y:auto;
+}
+.screen .inner{text-align:center;max-width:660px;padding:30px 26px}
+.screen h1{
+  font-size:34px;color:#fff;letter-spacing:1px;margin-bottom:6px;
+  background:linear-gradient(90deg,#ffd98a,var(--accent),var(--accent2));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.screen .sub{color:var(--muted);font-size:14px;margin-bottom:18px}
+.screen .rules{
+  text-align:left;background:var(--card);border:1px solid var(--line);border-radius:13px;
+  padding:14px 20px;margin:0 auto 20px;font-size:13.5px;color:var(--muted);max-width:560px;
+}
+.screen .rules b{color:var(--text)}
+.screen .rules li{margin:5px 0 5px 18px}
+.screen .links{margin-top:16px;font-size:12px;color:var(--muted)}
+#cert-card{
+  background:linear-gradient(160deg,var(--card),#101828);border:1px solid rgba(245,180,85,.4);
+  border-radius:20px;padding:30px 38px;display:inline-block;position:relative;
+  box-shadow:0 0 60px rgba(245,180,85,.08);
+}
+#cert-card::before{content:"🎓";position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:36px}
+#cert-card h2{color:#ffd98a;font-size:22px;margin-bottom:2px;letter-spacing:2px}
+#cert-card .c-sub{color:var(--muted);font-size:12.5px}
+#cert-score{font-size:46px;font-weight:800;color:#fff;font-family:var(--mono);margin:8px 0 0}
+#cert-rank{color:var(--warn);font-size:14px;font-weight:700;margin-bottom:10px}
+#cert-badges{display:flex;gap:7px;justify-content:center;margin:10px 0 12px;font-size:21px;flex-wrap:wrap}
+#cert-badges span{
+  width:42px;height:42px;border-radius:11px;background:var(--card2);border:1px solid rgba(62,207,142,.4);
+  display:flex;align-items:center;justify-content:center;
+}
+#cert-note{font-size:12.5px;color:var(--muted);margin-bottom:14px;max-width:460px}
+#grad-table{display:none;text-align:left;margin:12px auto 4px;max-width:600px;font-size:12px;border-collapse:collapse}
+#grad-table.on{display:table}
+#grad-table td{padding:4px 10px;border-bottom:1px solid var(--line);color:var(--muted)}
+#grad-table td:first-child{color:#f5b455;font-weight:700;white-space:nowrap}
+#grad-table td:nth-child(2){color:#9ecbff;font-family:var(--mono);white-space:nowrap}
+#back-cert-fab{
+  position:fixed;right:16px;bottom:16px;z-index:41;display:none;
+  background:var(--card2);border:1px solid var(--warn);color:var(--warn);border-radius:10px;
+  padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;
+}
+#back-cert-fab.on{display:block}
+/* toast */
+#toast{
+  position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:50;
+  background:var(--card2);border:1px solid var(--warn);color:var(--warn);
+  padding:8px 18px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .4s;pointer-events:none;
+}
+#toast.shown{opacity:1}
+@media (max-width:980px){
+  #app{min-width:0}
+  #main{flex-direction:column}
+  #shop-view{min-height:300px}
+  #logo-sub,#top-links{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- ================= 顶栏 ================= -->
+  <header>
+    <div id="logo">🏗 智能奶茶店<span>架构师</span></div>
+    <div id="logo-sub">从零构建 · 痛点驱动</div>
+    <div id="progress-wrap">
+      <span id="progress-chip">阶段 0/8</span>
+      <div id="progress-bar"><div id="progress-fill"></div></div>
+    </div>
+    <div id="badges"></div>
+    <div id="score-chip">0 分</div>
+    <button id="mute-btn" title="切换音效">🔊</button>
+    <div id="top-links"><a href="learn.html" target="_blank">学习指南</a> · <a href="game.html" target="_blank">大冒险</a></div>
+  </header>
+
+  <!-- ================= 双面板 ================= -->
+  <div id="main">
+    <div class="panel" id="shop-view">
+      <div class="panel-head">🏪 店铺实时视图 <span class="sub">Phaser 等距场景</span><span class="right" id="shop-right">痛点正在上演……</span></div>
+      <div id="shop-body">
+        <div id="phaser-root" style="position:absolute;inset:0"></div>
+        <div id="hud">
+          <span class="lv-chip"><em id="hud-no">阶段 1</em><span id="hud-title"></span></span>
+          <span class="concept" id="hud-concept"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="arch-panel">
+      <div class="panel-head">📐 架构面板 <span class="sub">SVG 蓝图 · 逐步生长</span><span class="right" id="arch-right">空空如也</span></div>
+      <div id="arch-body">
+        <svg id="arch-svg" viewBox="0 0 420 500" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="gridpat" width="24" height="24" patternUnits="userSpaceOnUse">
+              <path d="M24 0H0V24" fill="none" stroke="#1a2438" stroke-width="1"/>
+            </pattern>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+              <path d="M0 0L10 5L0 10z" fill="#6b7d9e"/>
+            </marker>
+          </defs>
+          <rect x="0" y="0" width="420" height="500" fill="url(#gridpat)"/>
+          <g id="g-edges"></g>
+          <g id="g-nodes"></g>
+          <g id="g-wall"></g>
+          <text id="arch-hint" text-anchor="middle" fill="#3d4d6b" font-size="13">
+            <tspan x="210" y="228">🌌 空空如也</tspan>
+            <tspan x="210" y="252" font-size="10.5">遇到痛点 → 选对组件 → 架构在这里慢慢生长</tspan>
+          </text>
+        </svg>
+        <div id="reveal-banner">
+          <h2>🏗 这就是你构建的架构</h2>
+          <p>它就是 DeepSeek Harness / Loom 的核心设计</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 事件日志 ================= -->
+  <div id="event-log">
+    <div id="log-head">
+      <span class="dot"></span><b>📖 事件日志</b>
+      <span style="font-size:11.5px;color:var(--muted)">正在发生的事，逐条打印</span>
+      <span id="log-cnt"></span>
+      <button id="skip-btn">⏭ 跳过动画</button>
+    </div>
+    <div id="log-body"></div>
+  </div>
+
+  <!-- ================= 选择区 ================= -->
+  <div id="choice-area">
+    <div id="pain-line" class="hidden">
+      <span class="pl-tag">💡 当前痛点</span>
+      <span id="pain-text"></span>
+    </div>
+    <div id="choice-wait">⏳ 故事正在展开……</div>
+    <div id="choices" class="hidden"></div>
+  </div>
+</div>
+
+<!-- ================= 术语抽屉 ================= -->
+<div id="terms">
+  <h3 id="terms-title">术语对照 · 故事 ↔ 框架</h3>
+  <div class="t-sub" id="terms-sub"></div>
+  <div id="terms-rows"></div>
+  <a class="readmore" id="terms-link" href="#" target="_blank">📖 深入阅读 →</a>
+  <div id="nextbar"></div>
+</div>
+
+<!-- ================= 片头 ================= -->
+<div id="intro" class="screen">
+  <div class="inner">
+    <h1>智能奶茶店架构师</h1>
+    <div class="sub">从零构建 · 痛点驱动 · 8 个阶段 · Phaser 3 + SVG 蓝图</div>
+    <div class="rules">
+      <b>玩法：</b>你接手了一家空荡荡的智能奶茶店，右侧的架构蓝图也一片空白。
+      <ul>
+      <li>8 个<b>真实的业务痛点</b>接连而来，每次你都要<b>二选一</b>：搭建哪个组件？</li>
+      <li>选对了 → 右侧<b>架构面板实时长出新组件并连线</b>，左侧店铺上演好结果</li>
+      <li>选错了 → 亲历一场灾难，架构面板<b>拒绝生长</b>，然后重新选择</li>
+      <li>标着 <b style="color:var(--warn)">✨ 听起来更有道理</b> 的选项，未必是对的</li>
+      <li>第 8 阶段结束，看看你亲手搭出的这张图——<b>它可不是随便画的</b></li>
+      </ul>
+    </div>
+    <button class="btn" id="btn-start">🏗 开始构建 ▸</button>
+    <button class="btn ghost hidden" id="btn-continue">继续上次构建</button>
+    <div class="links">
+      <a href="learn.html" target="_blank">学习指南</a> · <a href="harness-book.zh.html" target="_blank">漫画书</a> · <a href="game.html" target="_blank">《智能奶茶店大冒险》8 关版</a>
+      <br>贴图沿用《大冒险》· 音效为 Web Audio 实时合成
+    </div>
+  </div>
+</div>
+
+<!-- ================= 毕业画面 ================= -->
+<div id="grad" class="screen hidden">
+  <div class="inner">
+    <div id="cert-card">
+      <h2>毕业证书</h2>
+      <div class="c-sub">智能奶茶店 · 首席架构学</div>
+      <div id="cert-score">0</div>
+      <div id="cert-rank"></div>
+      <div id="cert-badges"></div>
+      <div id="cert-note">你从一家空店开始，被 8 个痛点逼着搭出了这张架构图——它就是 DeepSeek Harness / Loom 的核心设计。现在，没有一块组件对你来说是"凭空出现"的。</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn ghost" id="btn-view-arch">📐 欣赏完整架构图</button>
+        <button class="btn ghost" id="btn-terms-table">📋 查看术语对照表</button>
+        <a class="btn ghost" href="harness-book.zh.html" target="_blank" style="text-decoration:none">📖 去读漫画书深入了解 →</a>
+        <button class="btn" id="btn-restart">↺ 重新构建</button>
+      </div>
+      <table id="grad-table"></table>
+      <div class="links" style="margin-top:14px">
+        下一站：<a href="learn.html" target="_blank">10 分钟上手 Loom</a> · <a href="whitepaper.zh.md" target="_blank">设计白皮书</a>
+      </div>
+    </div>
+  </div>
+</div>
+<button id="back-cert-fab">🎓 毕业证书</button>
+<div id="toast"></div>
+
+<script>
+/* ================================================================
+ * 智能奶茶店架构师 —— 从零构建 DeepSeek Harness / Loom
+ * 左：Phaser 店铺实时视图   右：SVG 架构面板（逐步生长）
+ * 流程：PAIN(日志逐条) → CHOICE → SIM(后果上演) →
+ *       错=面板拒绝生长+重选 / 对=面板长出组件+术语对照 → NEXT
+ * 第 8 阶段完成：节点呼吸发光 + 连线流动 + 揭示真实身份
+ * ================================================================ */
+'use strict';
+
+/* ---------------- 贴图（沿用 docs/game/img/） ---------------- */
+const IMG_URLS = {
+  'shop-bg':       'game/img/shop-bg.jpg',
+  'scene-counter': 'game/img/scene-counter.jpg',
+  'scene-archive': 'game/img/scene-archive.jpg',
+  'char-customer': 'game/img/character-customer.jpg',
+  'char-barista':  'game/img/character-barista.jpg',
+  'char-manager':  'game/img/character-manager.jpg',
+  'char-robot':    'game/img/character-robot.jpg',
+  'char-vip-a':    'game/img/character-vip-a.jpg',
+  'char-vip-b':    'game/img/character-vip-b.jpg',
+  'prop-ledger':   'game/img/prop-ledger.jpg',
+  'prop-tea-cup':  'game/img/prop-tea-cup.jpg',
+  'prop-menu':     'game/img/prop-menu-board.jpg',
+};
+
+/* ---------------- 架构图定义（SVG 420×500 蓝图） ----------------
+ * stage = 该组件在第几阶段长出；连线两端在节点边框上裁剪 */
+const NODES = {
+  loop:     { x:210, y:200, w:116, h:44, emoji:'🔄', story:'环形传送带', fw:'Agent Loop',       color:'#4f8cff', stage:1 },
+  tools:    { x:210, y:300, w:116, h:44, emoji:'🛠', story:'配方卡墙',   fw:'Tools+Schema',     color:'#3ecf8e', stage:2 },
+  log:      { x:210, y:100, w:138, h:44, emoji:'📜', story:'永不涂改的账本', fw:'Session Log',  color:'#f5b455', stage:3 },
+  approval: { x:210, y:384, w:116, h:44, emoji:'🛡', story:'经理审批台', fw:'Approval',         color:'#f07070', stage:4 },
+  memory:   { x:74,  y:200, w:104, h:44, emoji:'💭', story:'偏好卡柜',   fw:'Memory',           color:'#7c5cff', stage:5 },
+  code:     { x:340, y:300, w:104, h:44, emoji:'⚡', story:'配方卡机器', fw:'Code Mode',        color:'#ffd98a', stage:6 },
+  fork:     { x:348, y:40,  w:110, h:40, emoji:'🌿', story:'复印机·分叉', fw:'sessions.fork',  color:'#2fb9a8', stage:8 },
+  wall:     { wall:true, x:210, y:227, w:400, h:426, emoji:'🔒', story:'隔离墙', fw:'per-user isolation', color:'#7c5cff', stage:7 },
+};
+const EDGES = [
+  { id:'e-log-loop',    from:'log',  to:'loop',     stage:3, label:'append-only' },
+  { id:'e-loop-tools',  from:'loop', to:'tools',    stage:2, label:'tool call' },
+  { id:'e-loop-memory', from:'loop', to:'memory',   stage:5, label:'recall' },
+  { id:'e-tools-appr',  from:'tools',to:'approval', stage:4, label:'write' },
+  { id:'e-tools-code',  from:'tools',to:'code',     stage:6, label:'程序化' },
+  { id:'e-log-fork',    from:'log',  to:'fork',     stage:8, label:'fork' },
+];
+
+/* ---------------- 8 个构建阶段（完整内容） ---------------- */
+const STAGES = [
+/* ========== 阶段 1：第一位顾客 → Agent Loop ========== */
+{
+  id:1, badge:'🔄', title:'第一位顾客', concept:'Agent Loop · 思考→拿工具→检查的循环',
+  ch:1, chTitle:'第 1 章 · 为什么是奶茶店',
+  pain:'顾客只说"来杯甜的冰的"，奶茶师却不知道该从哪一步做起——每杯全靠瞎猜。',
+  bg:'shop-bg',
+  cast:[
+    {id:'barista', tex:'char-barista', name:'奶茶师', x:.26, y:.48, ring:0x3ecf8e},
+    {id:'customer', tex:'char-customer', name:'顾客', x:.78, y:.62, ring:0x4f8cff, enter:'right'},
+  ],
+  intro:[
+    {t:'一家崭新的奶茶店刚开业，店里空空荡荡——没有流程，没有制度，只有一个奶茶师', tone:'sys'},
+    {t:'一位顾客推门走了进来', act:{m:['customer',.6,.58]}},
+    {t:'顾客："来杯甜的冰的～"', act:{b:['customer','来杯甜的冰的～','n']}},
+    {t:'奶茶师愣在原地：甜的……冰的……然后呢？该做什么？', tone:'warn', act:{b:['barista','甜的…冰的…然后呢？','q'], fx:['question','barista']}},
+    {t:'他凭感觉做了一杯递过去', act:{spawn:['cup','prop-tea-cup',.5,.52]}},
+    {t:'顾客："太苦了！"', tone:'warn', act:{b:['customer','太苦了！','a'], fx:['angry','customer']}},
+    {t:'倒掉重做，第二杯……', act:{shake:.004}},
+    {t:'顾客："太甜了！你们这是糖浆里加茶吗？"', tone:'warn', act:{b:['customer','太甜了！！','a']}},
+    {t:'顾客看了眼手表：已经等了 20 分钟', tone:'bad', act:{b:['customer','等了 20 分钟了……','s'], fx:['question','customer']}},
+  ],
+  choiceA:{
+    label:'写一本 500 页的操作手册，覆盖所有场景',
+    sim:[
+      {t:'奶茶师抱起一本 500 页的手册开始翻："少糖冰乌龙"在哪一章……', act:{b:['barista','手册第…多少页来着','s']}},
+      {t:'翻到第 347 页，终于找到"少糖冰乌龙"的标准流程', tone:'warn'},
+      {t:'抬头一看——顾客早就走了', tone:'bad', act:{b:['barista','人呢？','q'], fx:['question','barista']}},
+      {t:'第二天来了新需求："桂花换玫瑰"——手册又要再加 80 页', tone:'bad'},
+      {t:'手册越写越厚，永远写不完：世界的变化比翻页快', tone:'bad', act:{fx:['boom','barista'], shake:.006}},
+    ],
+    result:'把所有流程提前写死 = 把智能冻进纸里。手册永远追不上世界的变化——顾客也不会等你翻到第 347 页。',
+  },
+  choiceB:{
+    label:'建一条环形传送带——奶茶师在上面循环：思考→拿工具→检查→再思考',
+    sim:[
+      {t:'奶茶师踏上环形传送带，循环开始', act:{b:['barista','上传送带！','h'], bounce:'barista'}},
+      {t:'【思考站】"他想喝甜的、冰的——那就乌龙 + 糖浆 + 冰"', act:{m:['barista',.38,.4], b:['barista','甜的、冰的…有了','n']}},
+      {t:'【工具站】拿乌龙茶底 + 糖浆 + 冰，按需组合', act:{m:['barista',.52,.44], fx:['sparkle','barista']}},
+      {t:'【检查站】尝一口——味道对了 ✓', tone:'good', act:{m:['barista',.66,.4], fx:['green','barista'], b:['barista','检查：甜度 ✓ 冰度 ✓','n']}},
+      {t:'出杯！从接单到递出，12 秒', tone:'good', act:{spawn:['cup','prop-tea-cup',.58,.56], fx:['sparkle','barista']}},
+      {t:'顾客："就……就这么快？"', tone:'good', act:{b:['customer','就这么快？！','h'], fx:['hearts','customer']}},
+    ],
+    result:'12 秒出杯。思考 → 拿工具 → 检查 → 再思考：一个不停止的循环，比任何手册都灵活——因为下一步做什么，是每圈现场决定的。',
+  },
+  node:'loop', edges:[],
+  terms:[
+    ['环形传送带','Agent Loop','思考→调工具→看结果→再思考的 turn/step 循环，智能体的心脏'],
+    ['思考站','模型调用','每一圈把当前状态交给模型，由它决定下一步'],
+    ['检查站','turn-stopping','循环停不停由数据决定，不由人提前写死'],
+    ['传送带上的订单卡','inbox 消息','驱动循环的输入队列：一条消息进来，跑一整段循环'],
+  ],
+},
+/* ========== 阶段 2：不一致的味道 → Tools + Schema ========== */
+{
+  id:2, badge:'🛠', title:'不一致的味道', concept:'Tool Registry + Schema · 契约保证一致',
+  ch:6, chTitle:'第 6 章 · 配方卡与三道关口',
+  pain:'新买的制茶机器人很聪明，但每杯味道随机：茶底放成咖啡、糖放成盐、杯子不封口。',
+  bg:'shop-bg',
+  cast:[
+    {id:'barista', tex:'char-barista', name:'奶茶师', x:.18, y:.42, ring:0x3ecf8e},
+    {id:'robot', tex:'char-robot', name:'制茶机器人', x:.68, y:.5, ring:0xf5b455, enter:'right'},
+    {id:'customer', tex:'char-customer', name:'顾客', x:.88, y:.68, ring:0x4f8cff},
+  ],
+  intro:[
+    {t:'店里新买了一台制茶机器人，据说"读过全世界的茶谱"', tone:'sys', act:{b:['robot','放着我来！','h']}},
+    {t:'第一杯：茶底放成了——咖啡', tone:'warn', act:{b:['robot','咦，这罐是咖啡？','q']}},
+    {t:'顾客喝了一口，当场吐了', tone:'warn', act:{m:['customer',.74,.6], b:['customer','呸！这是什么！','a'], fx:['angry','customer']}},
+    {t:'第二杯：糖罐一歪，放进去的是盐', tone:'warn', act:{shake:.004}},
+    {t:'顾客怒了："你们在报复社会吗！"', tone:'warn', act:{b:['customer','太咸了！！','a']}},
+    {t:'第三杯：看起来还行——但杯子没封口', tone:'warn'},
+    {t:'奶茶洒了一路，库存记录也全对不上', tone:'bad', act:{fx:['boom','robot'], shake:.007}},
+  ],
+  choiceA:{
+    label:'让机器人多练习几次，AI 很聪明会学好的',
+    sim:[
+      {t:'机器人："再练 10 杯！我肯定能学会！"', act:{b:['robot','再练 10 杯！','h'], bounce:'robot'}},
+      {t:'第 4 杯：冰块换成了热牛奶', tone:'bad'},
+      {t:'第 7 杯：珍珠煮成了一锅糊', tone:'bad', act:{fx:['question','robot']}},
+      {t:'第 10 杯：还是把盐当糖放了进去', tone:'bad', act:{fx:['boom','robot'], shake:.006}},
+      {t:'顾客的信任一点点崩塌："这家店看运气"', tone:'bad', act:{fx:['angry','customer']}},
+      {t:'月底盘点：库存账永远对不上', tone:'bad', act:{b:['barista','账又对不上了…','s']}},
+    ],
+    result:'聪明 ≠ 可靠。没有契约约束的聪明，只会以更快的速度犯更多样的错——运气不是工程。',
+  },
+  choiceB:{
+    label:'建一面配方卡墙——每款饮品的出品规格写清楚：茶底几克、糖几分、验收标准',
+    sim:[
+      {t:'配方卡上墙：乌龙 8g · 糖 5 分 · 冰 7 分 · 封口 ✓', act:{spawn:['card','prop-menu',.46,.36], b:['robot','按卡执行！','n']}},
+      {t:'机器人照卡取料，克数不多不少', act:{m:['robot',.56,.46]}},
+      {t:'留样秤逐项核对：✓ ✓ ✓ 全部合格', tone:'good', act:{fx:['green','robot'], b:['robot','✓ ✓ ✓ 全部合格','h']}},
+      {t:'一杯接一杯，味道完全一致', tone:'good', act:{spawn:['cup','prop-tea-cup',.62,.58], fx:['sparkle','robot']}},
+      {t:'顾客竖起大拇指："和上次一模一样！"', tone:'good', act:{fx:['hearts','customer']}},
+      {t:'后来换了一台新机器人——配方卡照用，第一天就上手', tone:'good', act:{b:['barista','换机器人？卡不用换','h']}},
+    ],
+    result:'规格即契约：换执行者（换模型）不改契约（schema）。一致性由校验保证，不靠运气。',
+  },
+  node:'tools', edges:['e-loop-tools'],
+  terms:[
+    ['配方卡墙','Tool Registry + Schema','每个工具的输入输出契约：字段、类型、约束——一次声明，处处校验'],
+    ['留样秤','内核输出校验','模型返回的数据先过 canonical JSON 校验，不合格进不了账本'],
+    ['换机器人照用','LLM adapter','换底层模型不改 schema：契约把"模型"和"系统"解耦'],
+  ],
+},
+/* ========== 阶段 3：停电的那天 → Session Log ========== */
+{
+  id:3, badge:'📜', title:'停电的那天', concept:'Session Log · append-only 唯一事实来源',
+  ch:7, chTitle:'第 7 章 · 账本与禁令：唯一事实来源',
+  pain:'周六最忙时段停电三分钟：12 桌订单全丢、营业额答不上、食品安全局拿不出记录。',
+  bg:'shop-bg',
+  cast:[
+    {id:'barista', tex:'char-barista', name:'奶茶师', x:.24, y:.46, ring:0x3ecf8e},
+    {id:'customer', tex:'char-customer', name:'顾客', x:.8, y:.64, ring:0x4f8cff},
+  ],
+  intro:[
+    {t:'周六最忙的时段，12 桌订单同时进行，杯影穿梭', tone:'sys'},
+    {t:'"啪"！全店停电——灯光熄灭，只剩应急灯在闪', tone:'warn', act:{dim:true, shake:.008}},
+    {t:'三分钟后，电来了', act:{dim:false}},
+    {t:'12 桌做到一半的订单——全没了', tone:'warn', act:{b:['barista','刚才…做到哪了？','q'], fx:['question','barista']}},
+    {t:'有位顾客已经等了 25 分钟', tone:'warn', act:{m:['customer',.6,.58], b:['customer','我的单呢？！','a'], fx:['angry','customer']}},
+    {t:'老板问："今天卖了多少？"——答不上来', tone:'bad', act:{b:['barista','我…不知道','s']}},
+    {t:'食品安全局上门抽查——拿不出任何一条记录', tone:'bad', act:{fx:['boom','barista'], shake:.009}},
+  ],
+  choiceA:{
+    label:'来电后从头开始，反正也不多',
+    sim:[
+      {t:'12 桌全部从头重做', tone:'warn', act:{shake:.005}},
+      {t:'等了 25 分钟的顾客摔门而去', tone:'bad', act:{b:['customer','不等了！','a'], fx:['angry','customer'], m:['customer',.94,.66]}},
+      {t:'差评刷屏："等了半小时，就给我重做？"', tone:'bad'},
+      {t:'食品安全局：无法审计——停业整顿', tone:'bad', act:{fx:['boom','barista'], shake:.008}},
+      {t:'损失：一个周六的全部流水', tone:'bad'},
+    ],
+    result:'没有记录的经营，等于从来没有经营过。顾客流失 + 监管处罚 + 无法审计，一次停电全暴露。',
+  },
+  choiceB:{
+    label:'建一个档案室，放一本永不涂改的账本——每件事按页码记下来',
+    sim:[
+      {t:'档案室建成：一本只许往后写、不许涂改的账本', act:{spawn:['ledger','prop-ledger',.46,.36], b:['barista','每件事，记一页','n']}},
+      {t:'从此：接单记一页、加珍珠记一页、出杯记一页……', act:{fx:['sparkle','barista']}},
+      {t:'停电再来？翻开账本：第 128 页', act:{b:['barista','seq 128：3 号桌乌龙，刚加完珍珠','n']}},
+      {t:'从那一行继续——一杯都没有重做', tone:'good', act:{fx:['green','barista'], b:['barista','从加珍珠之后继续！','h']}},
+      {t:'老板问营业额：翻到最后一页，一秒报数', tone:'good'},
+      {t:'食品安全局抽查：逐页回放，全部有据', tone:'good', act:{fx:['hearts','customer']}},
+    ],
+    result:'账本在，店就在。只追加 + 页码（seq）= 断电恢复、经营审计、精确回放，全都是白送的。',
+  },
+  node:'log', edges:['e-log-loop'],
+  terms:[
+    ['永不涂改的账本','Session Log（append-only）','只追加不修改的事件日志，整个系统唯一的事实来源'],
+    ['第 128 页','seq 序号','单调递增页码：任何一页都能精确定位、精确回放'],
+    ['从那步继续','resume','断电/断线后从最后一个事件接着跑，而不是从头再来'],
+    ['食品安全局','audit / replay','监管与审计：逐字节回放"谁在何时做了什么"'],
+  ],
+},
+/* ========== 阶段 4：一万元的教训 → Approval ========== */
+{
+  id:4, badge:'🛡', title:'一万元的教训', concept:'Approval · 写操作必须过人这关（fail-closed）',
+  ch:6, chTitle:'第 6 章 · 配方卡与三道关口',
+  pain:'奶茶师直接执行了批量修改 2000 条记录的脚本——bug 把两列搞反，数据永久损坏。',
+  bg:'scene-counter',
+  cast:[
+    {id:'barista', tex:'char-barista', name:'奶茶师', x:.3, y:.52, ring:0x3ecf8e},
+    {id:'manager', tex:'char-manager', name:'经理', x:.76, y:.6, ring:0x7c5cff, enter:'right'},
+  ],
+  intro:[
+    {t:'打烊后，奶茶师在电脑前整理会员系统', tone:'sys'},
+    {t:'他发现一个 bug，顺手写脚本批量修改 2000 条记录', tone:'warn', act:{b:['barista','这个 bug 我直接改了！','n']}},
+    {t:'回车按下——0.1 秒，执行完毕', tone:'warn', act:{shake:.004}},
+    {t:'脚本里的 bug："储值余额"和"积分"两列——搞反了', tone:'bad', act:{fx:['boom','barista'], shake:.007}},
+    {t:'2000 条记录，全部写错', tone:'bad', act:{shake:.009}},
+    {t:'有人的储值余额变成了 -500 元', tone:'bad', act:{fx:['red','barista']}},
+    {t:'有人的积分变成了 99999', tone:'bad', act:{fx:['boom','barista'], shake:.007}},
+    {t:'想回滚——却查不到是谁、在何时、改了什么', tone:'bad', act:{b:['barista','没有记录…改不回去了','s']}},
+  ],
+  choiceA:{
+    label:'效率优先，直接改（就像刚才那样）',
+    sim:[
+      {t:'第二天，又一个"顺手就改"', act:{b:['barista','再改一个！','n']}},
+      {t:'这次搞反的是"手机号"和"生日"', tone:'bad', act:{fx:['red','barista']}},
+      {t:'客服电话被打爆："你们的短信发到了别人的手机！"', tone:'bad', act:{shake:.006}},
+      {t:'赔偿 + 信誉损失，账面损失一万元', tone:'bad', act:{fx:['boom','barista'], shake:.008}},
+      {t:'谁改的？什么时候改的？——没人说得清', tone:'bad', act:{b:['manager','谁批准的？','q'], fx:['question','manager']}},
+    ],
+    result:'一次没过审批的写入，赔掉一个月的营业额。快 0.1 秒，慢一辈子。',
+  },
+  choiceB:{
+    label:'建一个经理审批台——写操作必须先端给经理按钮确认',
+    sim:[
+      {t:'奶茶师把"批量修改 2000 条"端到经理面前', act:{m:['barista',.5,.55], b:['barista','经理，这个改动您过目','n']}},
+      {t:'经理盯着看了三秒', act:{b:['manager','我看看…','n']}},
+      {t:'经理："等等——这两列是不是搞反了？"', act:{b:['manager','这两列反了吧？','q'], fx:['question','manager']}},
+      {t:'灾难在最后一米被拦下', tone:'good', act:{fx:['green','manager']}},
+      {t:'审批留档：谁、在何时、批准/拒绝了什么', tone:'good', act:{spawn:['ledger','prop-ledger',.62,.36], fx:['sparkle','manager']}},
+      {t:'五分钟没人应答？默认拒绝，数据分毫不动', tone:'good', act:{b:['manager','找不到我？那就先别动','n']}},
+    ],
+    result:'写操作过人这关（fail-closed）：慢五分钟，稳一辈子。而且每一次"问过谁"都有据可查。',
+  },
+  node:'approval', edges:['e-tools-appr'],
+  terms:[
+    ['经理审批台','Approval（tools/pre-execute）','写操作先推审批卡，人类点"允许"才真正执行'],
+    ['写操作','write 工具','一切写操作都是工具调用——所以都能被拦、被记、被回放'],
+    ['五分钟没人应答','fail-closed','审批超时默认拒绝：宁可不做，不可做错，数据分毫不动'],
+    ['审批记录','approval/asked + decided','问过谁、谁决定的，全部落日志，可回放'],
+  ],
+},
+/* ========== 阶段 5：被遗忘的熟客 → Memory ========== */
+{
+  id:5, badge:'💭', title:'被遗忘的熟客', concept:'Memory · 跨会话语义记忆',
+  ch:21, chTitle:'第 21 章 · 熟客偏好与老配方',
+  pain:'每周来 3 次的熟客推门进来，新奶茶师问"请问想喝什么"——熟客转身去了隔壁竞品店。',
+  bg:'shop-bg',
+  cast:[
+    {id:'barista', tex:'char-barista', name:'奶茶师', x:.24, y:.46, ring:0x3ecf8e},
+    {id:'vip', tex:'char-vip-a', name:'张先生', x:.78, y:.62, ring:0xf5b455, enter:'right'},
+  ],
+  intro:[
+    {t:'风铃一响，一位戴眼镜的熟客推门进来', tone:'sys'},
+    {t:'他每周来 3 次，一年消费 5000+，雷打不动', },
+    {t:'今天当班的是新奶茶师', act:{b:['barista','您好！请问想喝点什么？','n']}},
+    {t:'熟客愣住了', tone:'warn', act:{b:['vip','我上周才来过……你不记得我？','s'], fx:['question','vip']}},
+    {t:'他站了十秒，默默转身', tone:'warn', act:{m:['vip',.88,.66]}},
+    {t:'走进了隔壁的竞品店', tone:'bad', act:{fx:['red','vip'], shake:.004}},
+  ],
+  choiceA:{
+    label:'问一遍他想喝什么，又不是很麻烦',
+    sim:[
+      {t:'"您好！请问想喝点什么？"', act:{b:['barista','请问想喝什么？','n']}},
+      {t:'熟客："……不用了"', tone:'bad', act:{b:['vip','不用了','s']}},
+      {t:'他带走了自己的口味、他的朋友圈、他一年的 5000+', tone:'bad', act:{fx:['red','vip']}},
+      {t:'三个月后，竞品店挂出横幅："本店懂你"', tone:'bad', act:{shake:.006}},
+    ],
+    result:'失去年消费 5000+ 的忠诚客户，和他背后的整个朋友圈。"再问一遍"的成本看似很低，付账的是客户。',
+  },
+  choiceB:{
+    label:'建一个偏好卡柜——自动记住每位熟客的口味，下次直接召回',
+    sim:[
+      {t:'偏好卡柜建成：自动从每次对话里提炼口味偏好', act:{spawn:['card','prop-ledger',.44,.36], b:['barista','张先生的卡…在这','n']}},
+      {t:'奶茶师抬头一笑："张先生！三分糖去冰乌龙，老样子？"', act:{b:['barista','张先生，老样子？','h'], fx:['sparkle','barista']}},
+      {t:'熟客："你居然记得！"', tone:'good', act:{b:['vip','你居然记得！','h'], fx:['hearts','vip']}},
+      {t:'第二天，他带来了三个朋友', tone:'good', act:{fx:['hearts','vip'], fx2:['sparkle','barista']}},
+      {t:'上周的对话，变成了今天的默契', tone:'good', act:{m:['vip',.6,.58]}},
+    ],
+    result:'被记住的感觉，是最好的会员体系。每次服务都从"上次"继续——这就是跨会话记忆。',
+  },
+  node:'memory', edges:['e-loop-memory'],
+  terms:[
+    ['偏好卡柜','Memory System','跨会话语义记忆：两阶段提取 + FTS 召回'],
+    ['上周的对话','上一个 session','会话结束不等于遗忘——重要的事被提炼成长期记忆'],
+    ['"你记得我"','form:\'recall\' 注入','记忆以表单召回，注入新会话的上下文'],
+  ],
+},
+/* ========== 阶段 6：快与慢 → Code Mode ========== */
+{
+  id:6, badge:'⚡', title:'快与慢', concept:'Code Mode · run_code 一次跑完全套',
+  ch:9, chTitle:'第 9 章 · 配方卡机器：一张卡跑完整套',
+  pain:'100 杯团建订单要 5 步，一步步调工具 = 5 次模型往返：87 秒 + 5 次费用，中间还走神选错供应商。',
+  bg:'shop-bg',
+  cast:[
+    {id:'barista', tex:'char-barista', name:'奶茶师', x:.22, y:.44, ring:0x3ecf8e},
+    {id:'robot', tex:'char-robot', name:'机器人', x:.72, y:.52, ring:0xf5b455},
+  ],
+  intro:[
+    {t:'企业客户来电：明天团建，要 100 杯', tone:'sys', act:{b:['barista','100 杯！大单！','h']}},
+    {t:'流程五步：查库存 → 算成本 → 比价 → 下单 → 通知'},
+    {t:'奶茶师一步步调工具，每步都要等模型思考 3-5 秒', tone:'warn', act:{b:['robot','第 1 步：查库存…（等思考）','s']}},
+    {t:'5 次往返，花了 87 秒 + 5 次调用费用', tone:'warn', act:{fx:['red','robot']}},
+    {t:'第 3 步，模型"走神"——选错了供应商', tone:'bad', act:{fx:['boom','robot'], shake:.008, b:['robot','咦，我刚选了谁？','q']}},
+  ],
+  choiceA:{
+    label:'一步步来，稳扎稳打',
+    sim:[
+      {t:'第 1 跳：查库存（等模型思考…）', act:{b:['robot','查库存…（等）','n']}},
+      {t:'第 2 跳：算成本（再等一轮…）', act:{b:['robot','算成本…（等）','n']}},
+      {t:'第 3 跳：比价（又等…）', tone:'warn', act:{b:['robot','比价…（等）','s']}},
+      {t:'87 秒过去，客户在电话那头睡着了', tone:'bad', act:{shake:.005}},
+      {t:'第 4 跳：模型又走神，把"含糖"写成了"含税"', tone:'bad', act:{fx:['boom','robot'], shake:.008}},
+      {t:'又慢、又贵、中间步步惊心', tone:'bad', act:{fx:['red','robot']}},
+    ],
+    result:'每一跳往返，都是一次新的风险敞口和一笔新的费用。稳扎稳打 ≠ 一步一步等。',
+  },
+  choiceB:{
+    label:'建一台配方卡机器——写一张流程卡（程序），机器一次跑完全部步骤',
+    sim:[
+      {t:'写一张流程卡：五步打包成一个程序', act:{spawn:['card','prop-menu',.44,.36], b:['barista','一张卡，五步全包','n']}},
+      {t:'机器一次跑完：查库存 ✓ 算成本 ✓ 比价 ✓ 下单 ✓ 通知 ✓', tone:'good', act:{bounce:'robot', fx:['sparkle','robot']}},
+      {t:'总计 12 秒 + 1 次调用费用', tone:'good', act:{fx:['green','robot']}},
+      {t:'每一步照常走审批与校验——治理不降级', tone:'good', act:{b:['robot','✓ 每步都有记录','h']}},
+      {t:'快 7 倍，便宜 5 倍，还更稳', tone:'good', act:{fx:['hearts','barista']}},
+    ],
+    result:'写代码不是绕过治理，是压缩往返：子调用照样过 schema 校验与审批，每步都有事件。',
+  },
+  node:'code', edges:['e-tools-code'],
+  terms:[
+    ['配方卡机器','Code Mode / PTC（run_code）','让模型写一段代码、在沙箱一次跑完全套步骤'],
+    ['5 次往返','native tool calls','原生模式逐跳调用：每跳一次模型调用，慢且贵'],
+    ['每步照走审批','tool/code-dispatch 事件','代码里的子调用依然过 schema 校验与审批，治理不降级'],
+  ],
+},
+/* ========== 阶段 7：秘方泄露 → per-user isolation ========== */
+{
+  id:7, badge:'🔒', title:'秘方泄露', concept:'per-user isolation · 404 不泄露存在性',
+  ch:11, chTitle:'第 11 章 · 独立包间：每桌自己的服务员',
+  pain:'两位 VIP 共用一个储物柜：VIP-B 意外看到 VIP-A 的秘方，截图发给竞争对手——VIP-A 起诉。',
+  bg:'scene-archive',
+  cast:[
+    {id:'vipa', tex:'char-vip-a', name:'VIP-A 先生', x:.28, y:.56, ring:0x4f8cff},
+    {id:'vipb', tex:'char-vip-b', name:'VIP-B 女士', x:.74, y:.56, ring:0x7c5cff, enter:'right'},
+  ],
+  intro:[
+    {t:'档案室里，两位 VIP 各有一份秘方配方——压箱底的商业机密', tone:'sys', act:{spawn:['secret','prop-ledger',.5,.32]}},
+    {t:'目前他们共用一个大储物柜，图省事', tone:'warn'},
+    {t:'VIP-B 来取自己的秘方', act:{m:['vipb',.52,.5], b:['vipb','我的秘方在哪…','n']}},
+    {t:'她翻着翻着——看到了 VIP-A 的秘方', tone:'warn', act:{fx:['red','vipb'], b:['vipb','这是…A 先生的配方？','q']}},
+    {t:'顺手拍了一张照', tone:'bad', act:{shake:.006}},
+    {t:'照片发给了竞争对手——VIP-A 起诉', tone:'bad', act:{fx:['boom','vipa'], shake:.009, b:['vipa','我的秘方！','a']}},
+  ],
+  choiceA:{
+    label:'大家共用一个大储物柜，方便管理',
+    sim:[
+      {t:'共用柜越塞越满，谁的机密都裸着放', act:{b:['vipb','反正都在一个柜里','n']}},
+      {t:'第二周，实习生也领到了柜子钥匙', tone:'bad', act:{shake:.005}},
+      {t:'三个月后，配方出现在竞争对手的菜单上', tone:'bad', act:{fx:['boom','vipa'], shake:.008}},
+      {t:'法庭上，VIP-A 只问了一句："谁授权他看？"', tone:'bad', act:{fx:['angry','vipa'], b:['vipa','谁授权的？！','a']}},
+    ],
+    result:'共用存储没有隔离，就没有秘密可言。"方便管理"的另一半叫"方便泄露"。',
+  },
+  choiceB:{
+    label:'每人一个带锁的私人柜——互相看不到对方的存在',
+    sim:[
+      {t:'每位 VIP 一个独立带锁柜：柜子互不可见', act:{spawn:['secretA','prop-ledger',.36,.32], spawnB:['secretB','prop-ledger',.66,.32], b:['vipb','这是我的柜','n']}},
+      {t:'VIP-B 用自己的钥匙打开自己的柜', act:{m:['vipb',.66,.52], b:['vipb','钥匙一转，咔哒','h']}},
+      {t:'她好奇地望向 VIP-A 的柜区——', act:{m:['vipb',.5,.56], b:['vipb','那边是…','q']}},
+      {t:'看到的只有一堵白墙', act:{fx:['question','vipb']}},
+      {t:'"那边好像什么都没有"', tone:'good', act:{b:['vipb','好像什么都没有','n']}},
+      {t:'两份秘方，安然无恙', tone:'good', act:{fx:['hearts','vipa'], fx2:['hearts','vipb']}},
+    ],
+    result:'看不到，比"看得到但禁止看"安全得多——连"这里有没有东西"都不告诉你。',
+  },
+  node:'wall', edges:[],
+  terms:[
+    ['带锁柜子','per-user isolation','每个用户独立的命名空间：会话、记忆、工具互不可见'],
+    ['白墙','404 not found','越权访问返回"不存在"而非"禁止"——不泄露存在性'],
+    ['钥匙','token / 身份认证','身份凭证决定你能看到哪个柜子；没有钥匙，墙上连门缝都没有'],
+  ],
+},
+/* ========== 阶段 8：试错的勇气 → sessions.fork ========== */
+{
+  id:8, badge:'🌿', title:'试错的勇气', concept:'sessions.fork · 在副本上安全试错',
+  ch:7, chTitle:'第 7 章 · 账本与禁令（分叉的命根子）',
+  pain:'想试"桂花替乌龙"的新配方：直接改主线，失败就覆盖原配方——谁都不敢试新东西了。',
+  bg:'shop-bg',
+  cast:[
+    {id:'barista', tex:'char-barista', name:'奶茶师', x:.24, y:.46, ring:0x3ecf8e},
+    {id:'customer', tex:'char-customer', name:'顾客', x:.8, y:.64, ring:0x4f8cff},
+  ],
+  intro:[
+    {t:'店里想试新配方：用桂花替乌龙——万一爆火呢？', tone:'sys', act:{b:['barista','桂花乌龙…试试？','h']}},
+    {t:'但万一有人对桂花过敏呢？', tone:'warn'},
+    {t:'如果直接改主线配方：成功了还好，失败了……', tone:'warn', act:{fx:['question','barista']}},
+    {t:'原配方会被覆盖，再也回不来', tone:'bad', act:{fx:['red','barista']}},
+    {t:'结果就是：谁都不敢试新东西', tone:'warn', act:{b:['barista','不敢动…','s']}},
+  ],
+  choiceA:{
+    label:'直接改，不行再改回来',
+    sim:[
+      {t:'大笔一挥，主线配方直接改成桂花', act:{spawn:['card','prop-menu',.46,.36], shake:.005}},
+      {t:'一位对桂花过敏的顾客喝了，出了事', tone:'bad', act:{m:['customer',.58,.58], b:['customer','我过敏了…','a'], fx:['boom','customer']}},
+      {t:'"快！把配方改回来！"', act:{b:['barista','改回去改回去！','a']}},
+      {t:'——原配方文件已被覆盖，没有备份', tone:'bad', act:{fx:['red','barista']}},
+      {t:'翻遍全店，找不到任何备份', tone:'bad', act:{fx:['boom','barista'], shake:.008}},
+      {t:'整条产品线报废', tone:'bad', act:{shake:.011, fx:['boom','barista']}},
+    ],
+    result:'没有分叉的实验，赌上的是全部家当。不敢试错的产品线，慢慢也会死。',
+  },
+  choiceB:{
+    label:'建一台复印机——把现在的账本前半本复印一份，在复印件上试新配方',
+    sim:[
+      {t:'复印前半本账本，得到一份"分叉副本"', act:{spawn:['forkA','prop-ledger',.38,.34], spawnB:['forkB','prop-ledger',.58,.34], b:['barista','复印件上随便试！','h']}},
+      {t:'副本上试做桂花乌龙，请熟客试喝', act:{fx:['sparkle','barista'], bounce:'barista'}},
+      {t:'有顾客试喝后报告过敏', tone:'warn', act:{b:['customer','有点不舒服…','s'], fx:['red','customer']}},
+      {t:'翻开原账本——原配方完好如初', tone:'good', act:{fx:['green','barista'], b:['barista','原配方还在！','h']}},
+      {t:'安全换回原配方，主线毫发无伤', tone:'good', act:{m:['customer',.68,.6]}},
+      {t:'失败的桂花经验也被记下——下次自动降权', tone:'good', act:{fx:['hearts','customer'], fx2:['sparkle','barista']}},
+    ],
+    result:'试错发生在副本上，主线永远安全。而且失败不会被遗忘：它变成"被降权的路径"。',
+  },
+  node:'fork', edges:['e-log-fork'],
+  terms:[
+    ['复印前半本','sessions.fork','在 turn 边界复制会话日志，开出一条平行世界线'],
+    ['原账本不动','原会话不受影响','分叉只读取原日志，绝不写回——回滚就是"删掉复印件"'],
+    ['桂花失败经验','被拒路径（降权）','失败的分叉自然风化：路径记忆降权，成功路径被加固'],
+  ],
+},
+];
+
+/* ================================================================
+ * Web Audio 音效（实时合成，无外部文件）
+ * ================================================================ */
+const SFX = (() => {
+  let ctx = null, muted = false;
+  const ensure = () => { if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } return ctx; };
+  const tone = (freq, dur, type, vol, when, slideTo) => {
+    const c = ensure(); if (!c || muted) return;
+    const t0 = c.currentTime + (when || 0);
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t0);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol || 0.12, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  };
+  return {
+    unlock: () => { const c = ensure(); if (c && c.state === 'suspended') c.resume(); },
+    toggle() { muted = !muted; return muted; },
+    click: () => tone(760, 0.06, 'square', 0.05),
+    good:  () => { tone(659, 0.12, 'sine', 0.12); tone(880, 0.2, 'sine', 0.12, 0.1); tone(1319, 0.3, 'sine', 0.09, 0.2); },
+    bad:   () => { tone(160, 0.35, 'sawtooth', 0.14, 0, 70); tone(110, 0.4, 'square', 0.08, 0.05, 55); },
+    step:  () => tone(520, 0.045, 'triangle', 0.04),
+    boom:  () => { tone(90, 0.5, 'sawtooth', 0.16, 0, 40); tone(60, 0.6, 'square', 0.1, 0.03, 30); },
+    grow:  () => { tone(392, 0.14, 'sine', 0.1); tone(523, 0.16, 'sine', 0.1, 0.09); tone(784, 0.3, 'sine', 0.09, 0.18, 1046); },
+    fanfare: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, 'sine', 0.11, i * 0.13)); tone(1319, 0.6, 'sine', 0.08, 0.55); },
+  };
+})();
+
+/* ================================================================
+ * 架构面板（SVG 蓝图管理器）
+ * ================================================================ */
+const Arch = (() => {
+  const svg = document.getElementById('arch-svg');
+  const gEdges = document.getElementById('g-edges');
+  const gNodes = document.getElementById('g-nodes');
+  const gWall = document.getElementById('g-wall');
+  const NS = 'http://www.w3.org/2000/svg';
+  const TAGS = ['①','②','③','④','⑤','⑥','⑦','⑧'];
+  const grown = new Set();
+
+  const el = (tag, attrs) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
+  /* 从矩形中心朝目标方向求与边框的交点（用于裁剪连线端点） */
+  const border = (cx, cy, hw, hh, dx, dy) => {
+    const tx = dx !== 0 ? hw / Math.abs(dx) : Infinity;
+    const ty = dy !== 0 ? hh / Math.abs(dy) : Infinity;
+    const t = Math.min(tx, ty);
+    return { x: cx + dx * t, y: cy + dy * t };
+  };
+
+  function buildEdge(def) {
+    const a = NODES[def.from], b = NODES[def.to];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const p1 = border(a.x, a.y, a.w / 2 + 3, a.h / 2 + 3, dx, dy);
+    const p2 = border(b.x, b.y, b.w / 2 + 6, b.h / 2 + 6, -dx, -dy);
+    const path = el('path', {
+      d: `M ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
+      class: 'edge', 'marker-end': 'url(#arrow)',
+    });
+    gEdges.appendChild(path);
+    const len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    path.setAttribute('stroke-dasharray', len);
+    path.setAttribute('stroke-dashoffset', len);
+    const lab = el('text', {
+      class: 'elabel', x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 - 5,
+      'text-anchor': 'middle',
+    });
+    lab.textContent = def.label;
+    gEdges.appendChild(lab);
+    return path;
+  }
+
+  function buildNode(def) {
+    const g = el('g', { class: 'node' });
+    g.style.setProperty('--nc', def.color);
+    const x = def.x - def.w / 2, y = def.y - def.h / 2;
+    g.appendChild(el('rect', { class: 'box', x, y, width: def.w, height: def.h, rx: 11 }));
+    const story = el('text', {
+      class: 'story', x: def.x, y: def.y + 4.5, 'text-anchor': 'middle',
+    });
+    story.textContent = def.emoji + ' ' + def.story;
+    g.appendChild(story);
+    const fw = el('text', {
+      class: 'fw', x: def.x, y: def.y + 4, 'text-anchor': 'middle',
+    });
+    fw.textContent = def.fw;
+    g.appendChild(fw);
+    const tag = el('text', { class: 'tag', x: x + 6, y: y + 13 });
+    tag.textContent = TAGS[def.stage - 1];
+    g.appendChild(tag);
+    const cap = el('text', { class: 'cap', x: def.x, y: y + def.h + 12, 'text-anchor': 'middle' });
+    cap.textContent = def.story;
+    g.appendChild(cap);
+    gNodes.appendChild(g);
+    return g;
+  }
+
+  function buildWall(def) {
+    const g = el('g', { class: 'wall' });
+    g.style.setProperty('--nc', def.color);
+    const x = def.x - def.w / 2, y = def.y - def.h / 2;
+    g.appendChild(el('rect', { class: 'wrect', x, y, width: def.w, height: def.h, rx: 16 }));
+    const ls = el('text', { class: 'wlab-s', x: x + 14, y: y + 21 });
+    ls.textContent = def.emoji + ' ' + def.story;
+    g.appendChild(ls);
+    const lf = el('text', { class: 'wlab-f', x: x + 14, y: y + 21 });
+    lf.textContent = def.emoji + ' ' + def.fw;
+    g.appendChild(lf);
+    const tag = el('text', { class: 'tag', x: x + 14 + (def.story.length * 12.5 + 26), y: y + 21 });
+    tag.textContent = TAGS[def.stage - 1];
+    g.appendChild(tag);
+    gWall.appendChild(g);
+    return g;
+  }
+
+  const nextFrame = (fn) => requestAnimationFrame(() => requestAnimationFrame(fn));
+
+  /* 长出一个阶段的组件：node + edges。instant=true 时无动画（恢复存档用） */
+  function grow(stageDef, instant) {
+    const nodeKey = stageDef.node;
+    const def = NODES[nodeKey];
+    if (!def || grown.has(nodeKey)) return;
+    grown.add(nodeKey);
+    grownCount(+1);
+    document.getElementById('arch-hint').classList.add('off');
+
+    const doNode = () => {
+      const g = def.wall ? buildWall(def) : buildNode(def);
+      if (instant) { svg.classList.add('instant'); nextFrame(() => g.classList.add('on')); setTimeout(() => svg.classList.remove('instant'), 80); }
+      else { SFX.grow(); nextFrame(() => g.classList.add('on')); }
+    };
+    const edgeEls = [];
+    (stageDef.edges || []).forEach(id => {
+      const ed = EDGES.find(e => e.id === id);
+      if (ed) edgeEls.push({ def: ed, el: buildEdge(ed) });
+    });
+    if (instant) {
+      svg.classList.add('instant');
+      edgeEls.forEach(o => { o.el.setAttribute('stroke-dashoffset', 0); o.el.classList.add('grown'); });
+      doNode();
+      setTimeout(() => svg.classList.remove('instant'), 100);
+      return;
+    }
+    // 动画：先连线生长，再节点弹出
+    edgeEls.forEach((o, i) => {
+      setTimeout(() => {
+        o.el.classList.add('grown');
+        o.el.setAttribute('stroke-dashoffset', 0);
+      }, 150 + i * 260);
+    });
+    setTimeout(doNode, 250 + edgeEls.length * 260);
+  }
+
+  function grownCount(d) {
+    const n = grown.size;
+    const right = document.getElementById('arch-right');
+    right.textContent = n === 0 ? '空空如也' : `已生长 ${n} / 8 个组件`;
+  }
+
+  function deny() {
+    const p = document.getElementById('arch-panel');
+    p.classList.remove('deny'); void p.offsetWidth; p.classList.add('deny');
+    setTimeout(() => p.classList.remove('deny'), 900);
+  }
+  function accept() {
+    const p = document.getElementById('arch-panel');
+    p.classList.remove('accept'); void p.offsetWidth; p.classList.add('accept');
+    setTimeout(() => p.classList.remove('accept'), 1000);
+  }
+
+  /* 毕业：呼吸发光 + 连线流动 + 术语揭示 */
+  function graduate() {
+    svg.classList.add('revealed');
+    gNodes.querySelectorAll('.node').forEach(n => n.classList.add('breath'));
+    gWall.querySelectorAll('.wall').forEach(n => n.classList.add('breath'));
+    gEdges.querySelectorAll('.edge').forEach(e => e.classList.add('flowing'));
+    document.getElementById('reveal-banner').classList.add('shown');
+  }
+
+  function reset() {
+    [gEdges, gNodes, gWall].forEach(g => { while (g.firstChild) g.removeChild(g.firstChild); });
+    grown.clear();
+    svg.classList.remove('revealed');
+    document.getElementById('arch-hint').classList.remove('off');
+    document.getElementById('reveal-banner').classList.remove('shown');
+    grownCount(0);
+  }
+
+  grownCount(0);
+  return { grow, deny, accept, graduate, reset, grown };
+})();
+
+/* ================================================================
+ * Phaser 店铺实时视图（沿用《大冒险》的舞台模式）
+ * ================================================================ */
+const GW = 640, GH = 520;
+
+/* Phaser 加载失败时降级为空基类（离线也能玩：店铺视图切换静态模式） */
+const PhaserSceneBase = (window.Phaser && window.Phaser.Scene) ? window.Phaser.Scene : class {};
+
+class ShopScene extends PhaserSceneBase {
+  constructor() { super('shop'); }
+
+  preload() {
+    Object.entries(IMG_URLS).forEach(([k, u]) => this.load.image(k, u));
+  }
+
+  create() {
+    this.actors = {}; this.bubbles = {};
+    this.bgImg = null;
+    this.dimRect = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x04060b).setAlpha(0).setDepth(4000);
+    this.makeFxTextures();
+    window.Game = makeBridge(this);
+    if (window.__pendingSetup) { const f = window.__pendingSetup; window.__pendingSetup = null; setTimeout(f, 60); }
+  }
+
+  makeFxTextures() {
+    const glyph = (key, ch) => {
+      if (this.textures.exists(key)) return;
+      const cv = document.createElement('canvas');
+      cv.width = 40; cv.height = 40;
+      const c2 = cv.getContext('2d');
+      c2.font = '28px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+      c2.textAlign = 'center'; c2.textBaseline = 'middle';
+      c2.fillText(ch, 20, 22);
+      this.textures.addCanvas(key, cv);
+    };
+    try {
+      glyph('fx-heart', '💖'); glyph('fx-angry', '💢'); glyph('fx-q', '❓');
+      glyph('fx-spark', '✨'); glyph('fx-star', '⭐');
+    } catch (e) { /* emoji 渲染失败时仍有圆点可用 */ }
+    const dot = (key, color) => {
+      if (this.textures.exists(key)) return;
+      const g = this.add.graphics().setVisible(false);
+      g.fillStyle(color, 1); g.fillCircle(5, 5, 5);
+      g.generateTexture(key, 10, 10); g.destroy();
+    };
+    dot('fx-dot', 0xffffff);
+  }
+
+  setBg(key) {
+    if (this.bgImg) { this.bgImg.destroy(); this.bgImg = null; }
+    if (!this.textures.exists(key)) return;
+    const f = this.textures.getFrame(key);
+    if (!f || !f.width) return;
+    const s = Math.max(GW / f.width, GH / f.height);
+    this.bgImg = this.add.image(GW / 2, GH / 2, key).setDisplaySize(f.width * s, f.height * s).setDepth(-10);
+  }
+
+  addActor(cfg, kind) {
+    const size = kind === 'prop' ? 76 : 112;
+    const x = cfg.x * GW, y = cfg.y * GH;
+    const root = this.add.container(x, y).setDepth(Math.round(y));
+    root.add(this.add.ellipse(0, size * 0.52, size * 0.74, size * 0.2, 0x000000, 0.35));
+    const body = this.add.container(0, 0);
+    root.add(body);
+    const hasTex = this.textures.exists(cfg.tex);
+    body.add(this.add.circle(0, 0, size / 2 - 2, 0x0f1522, 1));
+    if (hasTex) {
+      const img = this.add.image(0, 0, cfg.tex).setDisplaySize(size, size);
+      const g = this.make.graphics({ add: false });
+      g.fillStyle(0xffffff, 1); g.fillCircle(0, 0, size / 2 - 5);
+      body.add(g); g.setVisible(false);
+      img.setMask(g.createGeometryMask());
+      body.add(img);
+    } else {
+      body.add(this.add.circle(0, 0, size / 2 - 5, cfg.ring, 0.85));
+      body.add(this.add.text(0, 0, (cfg.name || '?')[0], { fontSize: '32px', color: '#0b0f17', fontStyle: 'bold' }).setOrigin(0.5));
+    }
+    body.add(this.add.circle(0, 0, size / 2 - 2).setStrokeStyle(4, cfg.ring != null ? cfg.ring : 0x243049, 1));
+    if (cfg.name && kind !== 'prop') {
+      root.add(this.add.text(0, size * 0.62 + 8, cfg.name, {
+        fontSize: '12px', color: '#dbe4f3', backgroundColor: 'rgba(11,15,23,.82)',
+        padding: { x: 7, y: 2 }, align: 'center',
+      }).setOrigin(0.5));
+    }
+    this.actors[cfg.id] = { root, body, size, kind };
+    if (cfg.enter === 'right' || cfg.enter === 'left') {
+      const off = cfg.enter === 'right' ? GW + 110 : -110;
+      const target = root.x;
+      root.x = off; root.alpha = 0;
+      this.tweens.add({ targets: root, x: target, alpha: 1, duration: 700, ease: 'Cubic.easeOut' });
+      this.tweens.add({ targets: body, scaleY: .82, duration: 140, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
+    } else {
+      root.setScale(0);
+      this.tweens.add({ targets: root, scale: 1, duration: 520, ease: 'Back.easeOut' });
+    }
+    this.tweens.add({
+      targets: body, y: -5, duration: 1500 + Math.random() * 500, yoyo: true, repeat: -1,
+      ease: 'Sine.easeInOut', delay: Math.random() * 400,
+    });
+  }
+
+  moveActor(id, nx, ny) {
+    const a = this.actors[id]; if (!a) return Promise.resolve();
+    a.root.setDepth(Math.round(ny * GH));
+    this.tweens.add({ targets: a.root, x: nx * GW, y: ny * GH, duration: 620, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: a.body, scaleY: .8, duration: 150, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
+    return this.delay(650);
+  }
+
+  bounce(id) {
+    const a = this.actors[id]; if (!a) return;
+    this.tweens.add({ targets: a.body, scale: 1.22, duration: 130, yoyo: true, ease: 'Quad.easeOut' });
+  }
+
+  bubble(id, text, kind) {
+    const a = this.actors[id];
+    const pos = a ? { x: a.root.x, y: a.root.y - a.size / 2 - 36 } : { x: GW / 2, y: GH / 2 - 110 };
+    this.killBubble(id);
+    const colors = { n: 0x8a99b5, q: 0xf5b455, a: 0xf07070, h: 0x3ecf8e, s: 0x8a99b5 };
+    const c = this.add.container(pos.x, pos.y).setDepth(3000);
+    const txt = this.add.text(0, 0, text, {
+      fontSize: '13.5px', color: '#dbe4f3', wordWrap: { width: 200 }, align: 'center',
+      backgroundColor: 'rgba(13,19,32,.95)', padding: { x: 10, y: 6 },
+    }).setOrigin(0.5);
+    const w = txt.width, h = txt.height;
+    const g = this.add.graphics();
+    g.fillStyle(0x0d1320, 0.95); g.fillRoundedRect(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 8);
+    g.lineStyle(2, colors[kind] || 0x8a99b5, 1); g.strokeRoundedRect(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 8);
+    g.fillTriangle(-6, h / 2 + 2, 6, h / 2 + 2, 0, h / 2 + 12);
+    c.add([g, txt]);
+    c.setScale(0);
+    this.tweens.add({ targets: c, scale: 1, duration: 280, ease: 'Back.easeOut' });
+    this.bubbles[id] = c;
+    this.time.delayedCall(2600, () => this.killBubble(id));
+  }
+  killBubble(id) {
+    const b = this.bubbles[id];
+    if (b) { this.tweens.killTweensOf(b); b.destroy(); delete this.bubbles[id]; }
+  }
+
+  removeActor(id) {
+    const a = this.actors[id]; if (!a) return;
+    this.killBubble(id);
+    const dir = a.root.x < GW / 2 ? -300 : 300;
+    this.tweens.add({ targets: a.root, x: a.root.x + dir, alpha: 0, duration: 520, ease: 'Cubic.easeIn', onComplete: () => { a.root.destroy(); } });
+    delete this.actors[id];
+  }
+
+  posOf(id) {
+    const a = this.actors[id];
+    return a ? { x: a.root.x, y: a.root.y - a.size / 4 } : { x: GW / 2, y: GH / 2 };
+  }
+  burst(key, x, y, n, cfg) {
+    if (!this.textures.exists(key)) return;
+    const em = this.add.particles(x, y, key, Object.assign({
+      speed: { min: 60, max: 170 }, lifespan: 1300, scale: { start: 1, end: 0 },
+      gravityY: 120, emitting: false, rotate: { min: 0, max: 360 },
+    }, cfg || {})).setDepth(3500);
+    em.explode(n);
+    this.time.delayedCall(1800, () => em.destroy());
+  }
+  fx(kind, target) {
+    const p = this.posOf(target);
+    switch (kind) {
+      case 'hearts': this.burst('fx-heart', p.x, p.y - 30, 10, { gravityY: -80 }); break;
+      case 'angry': this.burst('fx-angry', p.x, p.y - 30, 8, { speed: { min: 90, max: 200 } }); break;
+      case 'question': this.burst('fx-q', p.x, p.y - 40, 4, { speed: { min: 40, max: 90 }, gravityY: -60 }); break;
+      case 'sparkle': this.burst('fx-spark', p.x, p.y - 20, 10, { speed: { min: 50, max: 140 } }); break;
+      case 'green': this.burst('fx-dot', p.x, p.y - 20, 16, { tint: 0x3ecf8e, speed: { min: 70, max: 190 } }); break;
+      case 'red': this.burst('fx-dot', p.x, p.y - 20, 16, { tint: 0xf07070, speed: { min: 70, max: 190 } }); break;
+      case 'boom':
+        this.burst('fx-dot', p.x, p.y - 20, 26, { tint: [0xf07070, 0xff9c6b, 0xffd98a], speed: { min: 160, max: 380 }, lifespan: 900, scale: { start: 1.4, end: 0 } });
+        this.burst('fx-angry', p.x, p.y - 40, 6, { speed: { min: 90, max: 220 } });
+        this.cameras.main.shake(320, 0.008);
+        this.flash(0xf07070, .3);
+        SFX.boom();
+        break;
+      case 'confetti':
+        for (let i = 0; i < 3; i++) {
+          const em = this.add.particles(GW / 2 + (i - 1) * 220, -20, 'fx-dot', {
+            x: { min: -140, max: 140 }, speedY: { min: 160, max: 320 }, speedX: { min: -60, max: 60 },
+            lifespan: 2400, scale: { start: 1.1, end: .4 }, rotate: { min: 0, max: 360 },
+            tint: [0x4f8cff, 0x7c5cff, 0x3ecf8e, 0xf5b455, 0xf07070, 0xffd98a], quantity: 3,
+            frequency: 60, emitting: true,
+          }).setDepth(3600);
+          this.time.delayedCall(1400, () => em.stop());
+          this.time.delayedCall(4000, () => em.destroy());
+        }
+        this.burst('fx-star', GW / 2, GH / 2 - 60, 12, { speed: { min: 80, max: 220 }, gravityY: 200 });
+        break;
+    }
+  }
+  flash(color, alpha) {
+    const r = this.add.rectangle(GW / 2, GH / 2, GW, GH, color).setAlpha(alpha || .25).setDepth(4500);
+    this.tweens.add({ targets: r, alpha: 0, duration: 320, onComplete: () => r.destroy() });
+  }
+  dim(on) {
+    const d = this.dimRect;
+    this.tweens.killTweensOf(d);
+    if (on) {
+      d.setAlpha(0);
+      this.tweens.add({ targets: d, alpha: .12, duration: 90, yoyo: true, repeat: 3, onComplete: () => {
+        this.tweens.add({ targets: d, alpha: .55, duration: 500 });
+      } });
+    } else {
+      this.tweens.add({ targets: d, alpha: 0, duration: 400 });
+    }
+  }
+  delay(ms) { return new Promise(r => this.time.delayedCall(ms, r)); }
+}
+
+function makeBridge(scene) {
+  const chain = async (act) => {
+    if (!act) return;
+    if (act.dim !== undefined) scene.dim(!!act.dim);
+    if (act.shake) { scene.cameras.main.shake(300, act.shake); }
+    if (act.m) { await scene.moveActor(act.m[0], act.m[1], act.m[2]); }
+    if (act.spawn) scene.addActor({ id: act.spawn[0], tex: act.spawn[1], x: act.spawn[2], y: act.spawn[3], ring: 0x8a99b5 }, 'prop');
+    if (act.spawnB) scene.addActor({ id: act.spawnB[0], tex: act.spawnB[1], x: act.spawnB[2], y: act.spawnB[3], ring: 0xf5b455 }, 'prop');
+    if (act.bounce) scene.bounce(act.bounce);
+    if (act.b) scene.bubble(act.b[0], act.b[1], act.b[2] || 'n');
+    if (act.fx) scene.fx(act.fx[0], act.fx[1]);
+    if (act.fx2) scene.fx(act.fx2[0], act.fx2[1]);
+    if (act.fx3) scene.fx(act.fx3[0], act.fx3[1]);
+    if (act.remove) { scene.delay(300).then(() => scene.removeActor(act.remove)); }
+  };
+  return {
+    setup(stage, onReady) {
+      scene.tweens.killAll();
+      Object.keys(scene.actors).forEach(id => { const a = scene.actors[id]; if (a) a.root.destroy(); });
+      scene.actors = {};
+      Object.keys(scene.bubbles).forEach(id => scene.killBubble(id));
+      scene.dim(false);
+      scene.setBg(stage.bg);
+      (stage.cast || []).forEach((c, i) => scene.time.delayedCall(220 + i * 220, () => scene.addActor(c, 'char')));
+      scene.time.delayedCall(800 + (stage.cast.length || 0) * 220, onReady);
+    },
+    act: chain,
+    finale(kind) {
+      if (kind === 'good') { scene.fx('confetti'); SFX.good(); }
+      else { scene.fx('boom'); scene.cameras.main.shake(500, 0.014); scene.flash(0xf07070, .4); }
+    },
+    clear() { Object.keys(scene.actors).forEach(id => scene.removeActor(id)); },
+  };
+}
+
+function makeStubBridge() {
+  return { setup(l, onReady) { setTimeout(onReady, 200); }, act() {}, finale() {}, clear() {} };
+}
+
+(function bootPhaser() {
+  const finish = () => {
+    if (!window.Phaser || window.__phaserFailed) {
+      window.Game = makeStubBridge();
+      toast('⚠️ Phaser 未能加载（离线？），店铺视图已切换为静态模式', 5000);
+      return;
+    }
+    new Phaser.Game({
+      type: Phaser.AUTO,
+      width: GW, height: GH,
+      parent: 'phaser-root',
+      backgroundColor: '#0d1320',
+      scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+      scene: [ShopScene],
+    });
+  };
+  if (window.__phaserFailed || window.Phaser) finish();
+  else window.addEventListener('load', finish);
+})();
+
+/* ================================================================
+ * HTML UI 层：状态机
+ * ================================================================ */
+const $ = (id) => document.getElementById(id);
+const state = {
+  stage: 0, score: 0,
+  badges: [false,false,false,false,false,false,false,false],
+  wrongSeen: false,           // 本阶段是否已看过灾难
+  phase: 'intro',             // intro | pain | choice | sim | terms | grad
+  fast: false,                // 测试/调试用：跳过所有等待
+};
+const SAVE_KEY = 'loom-arch-builder-v1';
+const sleep = (ms) => new Promise(r => setTimeout(r, state.fast ? 1 : ms));
+
+function save() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      stage: state.stage, score: state.score, badges: state.badges,
+    }));
+  } catch (e) {}
+}
+function load() {
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return null; }
+}
+
+function toast(msg, ms) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('shown');
+  clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove('shown'), ms || 2600);
+}
+
+/* ---------------- 打字机 ---------------- */
+function typeText(el, text, cps, onDone) {
+  const speed = state.fast ? 0.01 : (1000 / (cps || 48));
+  let i = 0;
+  const cursor = document.createElement('span'); cursor.className = 'cursor'; cursor.textContent = '▌';
+  const step = () => {
+    if (i >= text.length) { if (cursor.parentNode) cursor.remove(); el._tw = null; onDone && onDone(); return; }
+    el.textContent += text[i++];
+    el.appendChild(cursor);
+    el._tw = setTimeout(step, speed);
+  };
+  if (el._tw) clearTimeout(el._tw);
+  el.textContent = '';
+  step();
+}
+
+/* ---------------- 事件日志 ---------------- */
+const Log = (() => {
+  const body = $('log-body');
+  const ICONS = { '':'·', warn:'⚠', bad:'✖', good:'✓', grow:'📐', sys:'▸', sep:'—' };
+  let count = 0;
+  async function line(step, fast) {
+    const tone = step.tone || '';
+    const div = document.createElement('div');
+    div.className = 'ev ' + tone;
+    const ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = ICONS[tone] || '·';
+    const tx = document.createElement('span'); tx.className = 'tx';
+    div.appendChild(ic); div.appendChild(tx);
+    body.appendChild(div);
+    count++; $('log-cnt').textContent = count + ' 条';
+    body.scrollTop = body.scrollHeight;
+    if (tone === 'sep') { tx.textContent = step.t; body.scrollTop = body.scrollHeight; return; }
+    SFX.step();
+    Game.act(step.act);
+    await new Promise(r => typeText(tx, step.t, 48, r));
+    body.scrollTop = body.scrollHeight;
+    await sleep(fast ? 15 : (tone === 'bad' ? 950 : tone === 'good' ? 700 : 400 + Math.random() * 160));
+  }
+  function instant(t, tone) { line({ t, tone }, true); }
+  function clear() { body.innerHTML = ''; count = 0; $('log-cnt').textContent = ''; }
+  return { line, instant, clear };
+})();
+
+/* 跳过按钮：只加速当前正在播放的序列 */
+let seqToken = null;
+$('skip-btn').addEventListener('click', () => {
+  SFX.click();
+  if (seqToken) seqToken.skip = true;
+});
+async function playSeq(steps) {
+  const token = { skip: false };
+  seqToken = token;
+  $('skip-btn').classList.add('on');
+  for (const s of steps) {
+    await Log.line(s, token.skip || state.fast);
+  }
+  $('skip-btn').classList.remove('on');
+  seqToken = null;
+}
+
+/* ---------------- 顶栏 ---------------- */
+function renderBadges() {
+  const box = $('badges'); box.innerHTML = '';
+  STAGES.forEach((st, i) => {
+    const d = document.createElement('div');
+    d.className = 'bdg';
+    d.textContent = st.badge;
+    d.title = `阶段 ${st.id} · ${st.title}（${NODES[st.node].fw}）`;
+    if (state.badges[i]) d.classList.add('lit');
+    if (state.phase !== 'grad' && i === state.stage && state.started) d.classList.add('cur');
+    box.appendChild(d);
+  });
+  $('score-chip').textContent = state.score + ' 分';
+}
+function renderProgress() {
+  const done = state.badges.filter(Boolean).length;
+  $('progress-chip').textContent = `阶段 ${Math.min(state.stage + 1, 8)}/8`;
+  $('progress-fill').style.width = (done / 8 * 100) + '%';
+}
+
+/* ---------------- 阶段流程 ---------------- */
+function startStage(i) {
+  state.stage = i; state.wrongSeen = false; state.phase = 'pain'; state.started = true;
+  const st = STAGES[i];
+  $('terms').classList.remove('shown');
+  $('pain-line').classList.add('hidden');
+  $('choices').classList.add('hidden');
+  $('choice-wait').classList.remove('hidden');
+  $('choice-wait').textContent = '⏳ 故事正在展开……';
+  Log.clear();
+  renderBadges(); renderProgress();
+  $('hud-no').textContent = `阶段 ${st.id}`;
+  $('hud-title').textContent = st.title;
+  $('hud-concept').textContent = st.concept;
+  $('shop-right').textContent = '痛点正在上演……';
+  Log.instant(`—— 阶段 ${st.id} · ${st.title} ——`, 'sep');
+  Game.setup(st, async () => {
+    state.phase = 'pain';
+    await playSeq(st.intro);
+    showChoices(st);
+  });
+}
+
+function showChoices(st) {
+  state.phase = 'choice';
+  $('choice-wait').classList.add('hidden');
+  $('pain-line').classList.remove('hidden');
+  $('pain-text').textContent = st.pain;
+  const box = $('choices'); box.innerHTML = ''; box.classList.remove('hidden');
+  const mk = (key, obj, isWrong) => {
+    const b = document.createElement('button');
+    b.className = 'choice-btn';
+    b.innerHTML = `<span class="key">${key}</span>${obj.label}` + (isWrong ? '<span class="spark">✨ 听起来更有道理</span>' : '');
+    b.onclick = () => { SFX.unlock(); SFX.click(); choose(st, isWrong ? 'wrong' : 'right'); };
+    box.appendChild(b);
+    return b;
+  };
+  const bA = mk('A', st.choiceA, true);
+  const bB = mk('B', st.choiceB, false);
+  requestAnimationFrame(() => requestAnimationFrame(() => { bA.classList.add('shown'); bB.classList.add('shown'); }));
+}
+
+async function choose(st, which) {
+  if (state.phase !== 'choice') return;
+  state.phase = 'sim';
+  $('choices').classList.add('hidden');
+  $('pain-line').classList.add('hidden');
+  $('choice-wait').classList.remove('hidden');
+  const obj = which === 'wrong' ? st.choiceA : st.choiceB;
+  Log.instant(`👉 你选择了${which === 'wrong' ? 'A' : 'B'}：${obj.label}`, 'sys');
+  await playSeq(obj.sim);
+  Log.instant('· ' + obj.result, which === 'wrong' ? 'bad' : 'good');
+
+  if (which === 'wrong') {
+    Game.finale('bad');
+    Arch.deny();
+    SFX.bad();
+    Log.instant('❌ 架构面板拒绝生长——这个组件解决不了眼前的痛点', 'bad');
+    Log.instant('↺ 换一个组件，重新选择', '');
+    if (!state.wrongSeen) { state.wrongSeen = true; addScore(25, '体验灾难'); }
+    save();
+    await sleep(900);
+    toast('架构面板拒绝生长 · 再选一次');
+    showChoices(st);
+  } else {
+    const def = NODES[st.node];
+    Arch.grow(st, false);
+    Arch.accept();
+    Game.finale('good');
+    Log.instant(`📐 架构面板长出新组件：${def.emoji} ${def.story}（${def.fw}）`, 'grow');
+    const first = !state.badges[state.stage];
+    if (first) {
+      state.badges[state.stage] = true;
+      addScore(state.wrongSeen ? 60 : 100, state.wrongSeen ? '选对（看过灾难后）' : '首次选对');
+    }
+    save();
+    renderBadges(); renderProgress();
+    await sleep(1400);
+    showTerms(st, true);
+  }
+}
+
+function addScore(delta, why) {
+  state.score += delta;
+  renderBadges();
+  toast(`+${delta} 分 · ${why}`);
+}
+
+/* ---------------- 术语面板 ---------------- */
+function showTerms(st, canViewWrong) {
+  state.phase = 'terms';
+  $('terms-title').textContent = `阶段 ${st.id} · 术语对照 —— ${st.title}`;
+  $('terms-sub').textContent = `${st.chTitle} · 你刚搭的「${NODES[st.node].story}」，在框架里是「${NODES[st.node].fw}」`;
+  const rows = $('terms-rows'); rows.innerHTML = '';
+  st.terms.forEach(([story, fw, desc]) => {
+    const d = document.createElement('div');
+    d.className = 'term-row';
+    d.innerHTML = `<span class="story">${story}</span><span class="arrow">↔</span><span class="fw">${fw}</span><span class="desc">${desc}</span>`;
+    rows.appendChild(d);
+  });
+  const link = $('terms-link');
+  link.href = `harness-book.zh.html#ch${st.ch}`;
+  link.textContent = `📖 深入阅读：《智能奶茶店经营手册》${st.chTitle} →`;
+
+  const bar = $('nextbar'); bar.innerHTML = '';
+  const mkBtn = (text, cls, fn) => {
+    const b = document.createElement('button');
+    b.className = 'btn ' + (cls || 'ghost');
+    b.textContent = text; b.onclick = () => { SFX.click(); fn(); };
+    bar.appendChild(b);
+  };
+  const isLast = state.stage === STAGES.length - 1;
+  if (canViewWrong) {
+    mkBtn('☠ 体验一下选错的灾难', 'danger', () => viewWrong(st));
+    mkBtn(isLast ? '🎓 毕业：揭开架构图真身 →' : `下一阶段：${STAGES[state.stage + 1].title} ▸`, '', () => nextStage());
+  } else {
+    mkBtn('↺ 返回', 'ghost', () => showTerms(st, true));
+  }
+  $('terms').classList.add('shown');
+}
+
+async function viewWrong(st) {
+  $('terms').classList.remove('shown');
+  state.phase = 'sim';
+  Log.instant(`☠ 体验反例：${st.choiceA.label}`, 'sys');
+  await playSeq(st.choiceA.sim);
+  Log.instant('· ' + st.choiceA.result, 'bad');
+  Game.finale('bad');
+  SFX.bad();
+  await sleep(800);
+  showTerms(st, true);
+}
+
+function nextStage() {
+  $('terms').classList.remove('shown');
+  if (state.stage >= STAGES.length - 1) { graduate(); return; }
+  startStage(state.stage + 1);
+}
+
+/* ---------------- 毕业 ---------------- */
+async function graduate() {
+  state.phase = 'grad';
+  state.started = false;
+  renderBadges(); renderProgress();
+  $('progress-chip').textContent = '阶段 8/8 · 完成';
+  Log.instant('—— 🎓 最后一块组件就位 ——', 'sep');
+  Log.instant('📐 八个组件全部长成，蓝图开始发光……', 'grow');
+  Arch.graduate();
+  Game.finale('good');
+  SFX.fanfare();
+  await sleep(2200);
+  Log.instant('🏗 这就是你构建的架构——它就是 DeepSeek Harness / Loom 的核心设计', 'grow');
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+
+  const total = state.score;
+  $('cert-score').textContent = total + ' 分';
+  let rank = '🐣 见习架构师（多看几次灾难，印象更深）';
+  if (total >= 950) rank = '🏆 传奇架构师 · 全组件零失误 + 亲历全部灾难';
+  else if (total >= 800) rank = '🏆 奶茶店首席架构师';
+  else if (total >= 600) rank = '🥇 资深架构师';
+  else if (total >= 400) rank = '🥈 架构学徒出师';
+  $('cert-rank').textContent = rank;
+  const bd = $('cert-badges'); bd.innerHTML = '';
+  STAGES.forEach((st, i) => {
+    const s = document.createElement('span');
+    s.textContent = state.badges[i] ? st.badge : '🔒';
+    s.title = `阶段 ${st.id} · ${st.title} = ${NODES[st.node].fw}`;
+    bd.appendChild(s);
+  });
+  const tb = $('grad-table'); tb.innerHTML = '';
+  STAGES.forEach(st => {
+    st.terms.forEach(([a, b]) => {
+      const tr = document.createElement('tr');
+      const td1 = document.createElement('td'); td1.textContent = a;
+      const td2 = document.createElement('td'); td2.textContent = b;
+      const td3 = document.createElement('td'); td3.textContent = `阶段 ${st.id} · ${st.title}`;
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+      tb.appendChild(tr);
+    });
+  });
+  await sleep(1600);
+  $('grad').classList.remove('hidden');
+}
+
+/* ---------------- 入口 / 重开 / 恢复 ---------------- */
+function resetAll() {
+  state.score = 0;
+  state.badges = [false,false,false,false,false,false,false,false];
+  Arch.reset();
+  renderBadges(); renderProgress();
+}
+$('btn-start').addEventListener('click', () => {
+  SFX.unlock(); SFX.click();
+  resetAll();
+  $('intro').classList.add('hidden');
+  $('grad').classList.add('hidden');
+  $('back-cert-fab').classList.remove('on');
+  startStage(0);
+});
+$('btn-continue').addEventListener('click', () => {
+  SFX.unlock(); SFX.click();
+  const s = load(); if (!s) return;
+  state.score = s.score || 0;
+  state.badges = (s.badges && s.badges.length === 8) ? s.badges : state.badges;
+  $('intro').classList.add('hidden');
+  // 先无声恢复之前已长出的组件
+  const upto = Math.max(0, Math.min(s.stage || 0, STAGES.length - 1));
+  for (let i = 0; i < upto; i++) Arch.grow(STAGES[i], true);
+  renderBadges(); renderProgress();
+  startStage(upto);
+});
+$('btn-restart').addEventListener('click', () => {
+  SFX.click();
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  $('grad').classList.add('hidden');
+  $('back-cert-fab').classList.remove('on');
+  resetAll();
+  $('intro').classList.remove('hidden');
+  refreshContinueBtn();
+});
+$('btn-view-arch').addEventListener('click', () => {
+  SFX.click();
+  $('grad').classList.add('hidden');
+  $('back-cert-fab').classList.add('on');
+});
+$('back-cert-fab').addEventListener('click', () => {
+  SFX.click();
+  $('grad').classList.remove('hidden');
+  $('back-cert-fab').classList.remove('on');
+});
+$('btn-terms-table').addEventListener('click', function () {
+  SFX.click();
+  $('grad-table').classList.toggle('on');
+  this.textContent = $('grad-table').classList.contains('on') ? '📋 收起术语对照表' : '📋 查看术语对照表';
+});
+$('mute-btn').addEventListener('click', function () {
+  const m = SFX.toggle(); this.textContent = m ? '🔇' : '🔊'; SFX.click();
+});
+
+function refreshContinueBtn() {
+  const s = load();
+  const btn = $('btn-continue');
+  if (s && (s.stage > 0 || s.score > 0)) {
+    btn.classList.remove('hidden');
+    btn.textContent = `继续上次构建（阶段 ${Math.min((s.stage || 0) + 1, 8)} · ${s.score || 0} 分）`;
+  } else btn.classList.add('hidden');
+}
+
+/* 键盘：A/1 选 A，B/2 选 B */
+window.addEventListener('keydown', (e) => {
+  if (state.phase !== 'choice') return;
+  const kids = $('choices').children;
+  if ((e.key === '1' || e.key.toLowerCase() === 'a') && kids[0]) kids[0].click();
+  if ((e.key === '2' || e.key.toLowerCase() === 'b') && kids[1]) kids[1].click();
+});
+
+/* Game 桥可能尚未就绪（Phaser 场景 create() 之前）——Proxy 包一层自动等待 */
+const Game = new Proxy({}, {
+  get(_t, prop) {
+    if (window.Game) return window.Game[prop];
+    if (prop === 'setup') return (st, cb) => { window.__pendingSetup = () => window.Game.setup(st, cb); };
+    return () => {};
+  },
+});
+
+renderBadges(); renderProgress(); refreshContinueBtn();
+
+/* 测试钩子（自动化冒烟测试用） */
+window.__gb = {
+  state, STAGES, NODES, EDGES,
+  api: { startStage, choose: (w) => choose(STAGES[state.stage], w), nextStage, graduate, showChoices },
+};
+</script>
+</body>
+</html>

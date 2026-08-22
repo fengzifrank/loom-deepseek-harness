@@ -130,6 +130,7 @@ pnpm loom dev        # 一条命令：智能体服务(4620) + 前端(5173)，改
 | **🖼 漫画入门**（8 幅 · 智能奶茶店故事） | [comic](docs/comic.zh.md) |
 | **📖 漫画书**（23 幅 · 15 章双轨：新手🐣/老手🦉，覆盖整个 Harness） | [harness-book](docs/harness-book.zh.html) |
 | **🎮 教学游戏**（Phaser 3 · 8 关 · 后果先行） | [game](docs/game.html) |
+| **🏗 架构师游戏**（从零构建 · 痛点驱动 · 8 阶段） | [game-builder](docs/game-builder.html) |
 | **入门上手**（10 分钟/第一个应用/API 速查/FAQ） | [学习指南 learn.html](docs/learn.html)（浏览器直接打开） |
 | 深度设计（公理/API 到内核映射/竞品矩阵） | [白皮书](docs/whitepaper.zh.md) |
 | 各能力详解（M2-M8 章节全文） | [features](docs/features.zh.md) |
