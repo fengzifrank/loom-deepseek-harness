@@ -28,7 +28,33 @@ export interface PolicySpec {
   readonly rules: readonly PolicyRule[]
   /** 审批等待答复的超时（毫秒）；超时按拒绝处理（fail-closed）。默认 300000（5 分钟）。 */
   readonly approvalTimeoutMs?: number
+  /** 量化预算（M9）：按会话累计，超限 fail-closed（默认拒绝，或转人工审批）。 */
+  readonly budgets?: readonly BudgetSpec[]
 }
+
+/**
+ * 一条量化预算（M9，语义移植自 omnigent 治理层的 spend-cap 思路）：
+ * 计数器挂在会话上——工具调用按命中 glob 计数，token 按 assistant 消息的
+ * usage 四桶（input/output/cacheRead/cacheWrite，内核保证不相交）求和累计；
+ * 超限后的下一次工具调用按 effect 处理。v1 边界：计数器在内存中，进程重启
+ * 清零（会话日志保留完整审计，可事后核对）。
+ */
+export interface BudgetSpec {
+  /** 预算类型：tool-calls 每会话工具调用次数 / session-tokens 每会话 token 总消耗。 */
+  readonly kind: 'tool-calls' | 'session-tokens'
+  /** 上限（正整数）。tool-calls：命中模式的第 max+1 次调用被拒；session-tokens：累计超过 max 后新工具调用被拒。 */
+  readonly max: number
+  /** 命中的 glob 工具模式（tool-calls 用；缺省 '*' 全部工具）。 */
+  readonly tool?: string
+  /** 超限处理：deny 拒绝（默认，fail-closed）/ approve 转人工审批（复用审批门）。 */
+  readonly effect?: 'deny' | 'approve'
+}
+
+/** 全部合法预算类型（运行时校验用）。 */
+export const BUDGET_KINDS: readonly ('tool-calls' | 'session-tokens')[] = ['tool-calls', 'session-tokens']
+
+/** 全部合法预算超限裁决（运行时校验用）。 */
+export const BUDGET_EFFECTS: readonly ('deny' | 'approve')[] = ['deny', 'approve']
 
 /** 全部合法裁决（运行时校验用）。 */
 export const POLICY_EFFECTS: readonly PolicyEffect[] = ['allow', 'deny', 'approve']
@@ -68,6 +94,28 @@ export function assertPolicySpec(spec: unknown): asserts spec is PolicySpec {
   if (s.approvalTimeoutMs !== undefined
     && (!Number.isSafeInteger(s.approvalTimeoutMs) || (s.approvalTimeoutMs as number) <= 0)) {
     throw new Error(`app.policy() 的 approvalTimeoutMs 必须是正整数，收到 ${JSON.stringify(s.approvalTimeoutMs)}`)
+  }
+  if (s.budgets !== undefined) {
+    if (!Array.isArray(s.budgets)) throw new Error('app.policy() 的 budgets 必须是数组')
+    for (const [index, budget] of (s.budgets as unknown[]).entries()) {
+      if (budget === null || typeof budget !== 'object') throw new Error(`app.policy() budgets[${index}] 必须是 { kind, max } 对象`)
+      const b = budget as Record<string, unknown>
+      if (!BUDGET_KINDS.includes(b.kind as 'tool-calls')) {
+        throw new Error(`app.policy() budgets[${index}].kind 必须是 ${BUDGET_KINDS.map(k => `"${k}"`).join(' / ')}，收到 ${JSON.stringify(b.kind)}`)
+      }
+      if (!Number.isSafeInteger(b.max) || (b.max as number) <= 0) {
+        throw new Error(`app.policy() budgets[${index}].max 必须是正整数，收到 ${JSON.stringify(b.max)}`)
+      }
+      if (b.tool !== undefined && (typeof b.tool !== 'string' || (b.tool as string).trim() === '')) {
+        throw new Error(`app.policy() budgets[${index}].tool 必须是非空字符串（glob 模式）`)
+      }
+      if (b.effect !== undefined && !BUDGET_EFFECTS.includes(b.effect as 'deny')) {
+        throw new Error(`app.policy() budgets[${index}].effect 必须是 ${BUDGET_EFFECTS.map(e => `"${e}"`).join(' / ')}，收到 ${JSON.stringify(b.effect)}`)
+      }
+      if (b.kind === 'session-tokens' && b.tool !== undefined) {
+        throw new Error(`app.policy() budgets[${index}]：session-tokens 预算是会话级总量，不支持 tool 模式（收到 ${JSON.stringify(b.tool)}）`)
+      }
+    }
   }
 }
 

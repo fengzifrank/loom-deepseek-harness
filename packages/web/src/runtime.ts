@@ -64,6 +64,7 @@ import { BlockAssembler, createUserMessage } from '@deepseek-ai/dsh-llm'
 import z from '@deepseek-ai/schemastery'
 import type { App, ProjectionSpec, SubagentSpec, ToolSpec, WebhookChannelSpec } from './types.js'
 import { compilePolicy, type CompiledPolicy } from './policy.js'
+import { BudgetMeter, describeBudget, type BudgetExceeded } from './budget.js'
 import { httpRouteOf } from './http-route.js'
 import { generateOpenapi } from './openapi-gen.js'
 import { compileSubagents, denyListForAgent, type CompiledSubagents } from './subagent.js'
@@ -161,6 +162,8 @@ interface PreExecLike {
   readonly name: string
   readonly arguments?: unknown
   readonly signal?: AbortSignal
+  /** 发起调用的 agent（预算按其 sessionId 归账；http 面是稳定的隐藏 api 会话）。 */
+  readonly agent?: { readonly sessionId?: string }
 }
 
 /** allow / deny / ask（内核 PreToolDecision）。 */
@@ -702,10 +705,46 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
     }
   }
 
+  // ---- M9 预算：每会话一份计量器（惰性建；policy 声明了 budgets 才有） --------
+  // 计数器在内存中，进程重启清零（会话日志保留完整审计；文档化边界）。
+  const budgetSpecs = app.spec.policy?.budgets ?? []
+  const budgetMeters = new Map<string, BudgetMeter>()
+  const budgetMeterOf = (sessionId: string): BudgetMeter | undefined => {
+    if (budgetSpecs.length === 0) return undefined
+    let meter = budgetMeters.get(sessionId)
+    if (meter === undefined) {
+      meter = new BudgetMeter(budgetSpecs)
+      budgetMeters.set(sessionId, meter)
+    }
+    return meter
+  }
+  /** 预算越限的 SSE 广播（每条预算只发一次；会话没有订阅者时静默无害）。 */
+  function announceBudget(sessionId: string, exceeded: BudgetExceeded): void {
+    if (!exceeded.firstTime) return
+    pushSse(sessionId, {
+      type: 'loom/budget-exceeded',
+      sessionId,
+      kind: exceeded.spec.kind,
+      max: exceeded.spec.max,
+      current: exceeded.current,
+      ...(exceeded.spec.tool === undefined ? {} : { tool: exceeded.spec.tool }),
+      effect: exceeded.spec.effect ?? 'deny',
+    })
+    c.logger.warn(`loom budget: 会话 ${sessionId} 预算越限 —— ${describeBudget(exceeded)}`)
+  }
+
   // 全局（无 scope 标签）session/event 监听：只投影本插件创建的会话。
   c.on('session/event', (session, event) => {
     const entry = ownedSessions.get(session.id)
     if (entry === undefined) return
+    // M9：assistant 消息的 usage 四桶累计进该会话的预算计量器
+    // （session-tokens 超限不立即打断本轮——下一次工具调用时 fail-closed）。
+    if (event.type === 'assistant/message') {
+      const usage = (event.data as Record<string, unknown> | undefined)?.usage
+      if (usage !== undefined && typeof usage === 'object') {
+        budgetMeterOf(session.id)?.recordTokens(usage as Record<string, number>)
+      }
+    }
     const payload = projectEvent(event, entry.callIndex, cards)
     if (payload !== undefined) {
       for (const send of subscribers.get(session.id) ?? []) {
@@ -1042,16 +1081,8 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
     (c as unknown as { get?(service: 'webApprovalAnswerer'): WebApprovalAnswererService | undefined }).get?.('webApprovalAnswerer')
 
   if (policy !== undefined) {
-    // 裁决监听（无 scope 标签的插件监听器按 dsh-scope 规则收到全部 agent 作用域分发）。
-    c.on('tools/pre-execute', (exec, next) => {
-      const effect = policy.decide(exec.name)
-      if (effect === 'allow') return next()
-      if (effect === 'deny') {
-        return { kind: 'deny', reason: `loom policy: 工具 "${exec.name}" 被应用策略（deny）拒绝` }
-      }
-      // approve → ask：内核工具管线的 serviceAsk 会调 ctx.approval.request
-      // （携带 agent/toolName/callId/reason/signal），并自动落 approval/asked +
-      // approval/decided 审计对；裁决结果映射回 allow/deny（fail-closed）。
+    /** ask 裁决的公共路径：参数预览留档 + 审批缝可用性告警（policy-approve 与 budget-approve 共用）。 */
+    const askDecision = (exec: PreExecLike, reason: string): PreDecisionLike => {
       if (c.get?.('approval') === undefined) {
         c.logger.warn(`loom-runtime: 策略要求审批但组合缺少 user-approval 插件——工具 "${exec.name}" 将 fail-closed 拒绝（组合请加 @deepseek-ai/dsh-user-approval）`)
       }
@@ -1064,7 +1095,33 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
       } catch {
         pendingArgs.set(String(exec.callId), '(参数不可序列化)')
       }
-      return { kind: 'ask', reason: `loom policy: 工具 "${exec.name}" 需要人工审批` }
+      return { kind: 'ask', reason }
+    }
+
+    // 裁决监听（无 scope 标签的插件监听器按 dsh-scope 规则收到全部 agent 作用域分发）。
+    c.on('tools/pre-execute', (exec, next) => {
+      // M9：先记账后裁决——被拒的调用尝试也计数（防反复试探绕预算）。
+      const budgetSessionId = exec.agent?.sessionId ?? 'loom:sessionless'
+      const meter = budgetMeterOf(budgetSessionId)
+      meter?.recordToolCall(exec.name)
+      const effect = policy.decide(exec.name)
+      if (effect === 'deny') {
+        return { kind: 'deny', reason: `loom policy: 工具 "${exec.name}" 被应用策略（deny）拒绝` }
+      }
+      // M9：预算越限检查在策略裁决之后——deny 预算覆盖 allow 策略（fail-closed）；
+      // approve 预算把放行策略升级为人工审批。
+      const exceeded = meter?.check(exec.name)
+      if (exceeded !== undefined) {
+        announceBudget(budgetSessionId, exceeded)
+        const reason = `loom policy budget: 工具 "${exec.name}" 触发预算限制 —— ${describeBudget(exceeded)}`
+        if (exceeded.spec.effect === 'approve') return askDecision(exec, reason)
+        return { kind: 'deny', reason }
+      }
+      if (effect === 'allow') return next()
+      // approve → ask：内核工具管线的 serviceAsk 会调 ctx.approval.request
+      // （携带 agent/toolName/callId/reason/signal），并自动落 approval/asked +
+      // approval/decided 审计对；裁决结果映射回 allow/deny（fail-closed）。
+      return askDecision(exec, `loom policy: 工具 "${exec.name}" 需要人工审批`)
     })
 
     // 宿主桥注册（answerer 插件每次请求惰性解析——无激活顺序耦合）。
@@ -1125,6 +1182,14 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
           apiSessions: [...apiAgents.values()].map(agent => agent.session.id),
         },
         ...(policy === undefined ? {} : { policy: { default: policy.spec.default, rules: policy.spec.rules.length } }),
+        ...(budgetSpecs.length === 0 ? {} : {
+          budgets: budgetSpecs.map(budget => ({
+            kind: budget.kind,
+            max: budget.max,
+            ...(budget.tool === undefined ? {} : { tool: budget.tool }),
+            ...(budget.effect === undefined ? {} : { effect: budget.effect }),
+          })),
+        }),
         ...(authEnabled ? { auth: { mode: authSpec!.mode ?? 'anon-and-local', corsOrigins: corsOrigins ?? null } } : {}),
         ...(memorySpec === undefined ? {} : { memory: { extraction: extractionOn, recall: recallOn, agents: app.spec.agents.filter(agent => memoryEnabled(agent.id)).map(agent => agent.id), paths: app.spec.agents.filter(agent => pathsEnabled(agent.id)).map(agent => agent.id) } }),
         httpApi: app.spec.tools

@@ -101,8 +101,12 @@ export {
   globToRegExp,
   assertPolicySpec,
   POLICY_EFFECTS,
+  BUDGET_KINDS,
+  BUDGET_EFFECTS,
 } from './policy.js'
-export type { CompiledPolicy, PolicyEffect, PolicyRule } from './policy.js'
+export type { CompiledPolicy, PolicyEffect, PolicyRule, BudgetSpec } from './policy.js'
+export { BudgetMeter, describeBudget } from './budget.js'
+export type { BudgetUsage, BudgetExceeded } from './budget.js'
 export {
   verifyWebhookSignature,
   applyWebhookMap,

@@ -267,7 +267,7 @@ app.policy({
 | `allow/deny/ask` | `tools/pre-execute` waterfall 的三种裁决（`docs/cookbook/extension-cookbook.md:24-31`）；`ask` 路由进审批缝 | ✅（机制在，规则编译器 🔬） |
 | 审批 | `ctx.approval.request`：一次一单，answerer 缺席**fail-closed**，成对 `approval/asked`/`decided` 审计事件（`packages/interaction/user-approval/README.md`） | ✅ |
 | 三档权限预设 | permission-presets：`read-only`/`workspace-write`/`danger-full-access`（`packages/interaction/permission-presets/README.md`） | ✅ |
-| 预算 | token-meter 度量 + turn-stopping/守卫停止 | 🔬（组合已有件） |
+| 预算（M9） | `app.policy({ budgets: [...] })`：每会话 `tool-calls`（glob 计数）与 `session-tokens`（assistant 消息 usage 四桶求和）两类量化预算，超限 fail-closed 拒绝或转人工审批（复用审批门）；拒绝理由模型可见（工具错误文本）+ `loom/budget-exceeded` SSE 合成事件 + health 可观测面。语义移植自 omnigent 治理层 spend-cap（DENY 短路/fail-closed/计尝试不计成功）；v1 边界：计数器内存态，重启清零（会话日志保留完整审计）——`packages/web/src/budget.ts` + `examples/gis/tests/budget.e2e.test.ts`（无 key 驱动） | ✅ |
 | 超时/防重复 | guard 组：timeout-policy、repeat-tool-reminder（`packages/guard/`） | ✅（既有插件） |
 
 ### 5.6 通道：一个 agent，多个入口

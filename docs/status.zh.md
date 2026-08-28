@@ -1,6 +1,6 @@
 # Loom 状态与路线图（status.zh.md）
 
-> 状态总览与里程碑详情。当前一句话：**M1-M8 全量交付，338+1 测试全绿，已开源。**
+> 状态总览与里程碑详情。当前一句话：**M1-M9 全量交付，测试全绿，已开源。**
 
 ## 状态总览
 
@@ -26,6 +26,7 @@
 | **loom memory**：`app.memory()` + `app.agent(id, {memory:true})`——`.loom/memory.db`（node:sqlite FTS5，零新依赖，中文 bigram 分词，user_version 门禁）；写路径 mem0 式两阶段（提取候选 → FTS 相似 → ADD/UPDATE/DELETE/NOOP 决策，每会话串行队列，失败仅告警）；读路径首条消息 FTS top-K 注入（source form:'recall' 防注入框）；模型工具 memory_search/write/forget；`GET/PUT/DELETE /~loom/memories` + `MemoryPanel` | M7 | ✅ |
 | **路径记忆**：`app.agent(id, { memory: { paths: true } })` 窄门控——任务型 agent 记 `kind:'path'` 记忆（目标 + 工具序列 + 参数形状策略 + 结局，`toolSequenceSignature` 签名去重）；失败 turn（error/blocked）触发 FTS `search(userId, query, k, 'path')` 检索并经召回管道注入"待重验路径"（防注入框，明示先重跑只读步骤）；同会话下一次 turn 结算回写（completed → verified_at 刷新 + confidence +0.1，error/blocked → ×0.5，<0.3 软删），verified_at 超 30 天检索降权（惰性）；被拒路径也记（降权）；MemoryPanel 显示 confidence + verified_at——设计与实现见 [docs/path-memory.zh.md](docs/path-memory.zh.md)；e2e 证据链见 `examples/gis/tests/path-memory.e2e.test.ts`（无 key 确定性段 + 带 key 闭环：失败 → 注入 → completed → 0.8→0.9） | M8 | ✅ |
 | **插件生态**：消费——`dsh-session-query-sqlite` + `dsh-tool-session-query`（模型面 session_search，带 key e2e）与 `dsh-host-frontend-static`（替换 loom start 手写 SPA fallback；403/200/405 语义已验证）；生产——`dsh-python-tools`（Python 桥自 web 抽出，含 jsonSchemaToDsl）与 `dsh-web-approval-answerer`（SSE 审批 answerer：留档重发/并发 409/超时 fail-closed）两个 workspace 包（`dsh-plugin` 关键字、MIT、中英 README、独立单测；本阶段不发布 npm）；所有 `@deepseek-ai/*` 依赖钉精确 `0.1.1-rc.1`——见 [docs/plugin-ecosystem.zh.md](docs/plugin-ecosystem.zh.md) | M8 | ✅ |
+| **预算治理**：`app.policy({ budgets: [...] })` 量化预算——每会话 `tool-calls`（glob 模式计数，计尝试不计成功，被拒的调用也计数防试探绕过）与 `session-tokens`（assistant 消息 usage 四桶 input/output/cacheRead/cacheWrite 求和）；超限 fail-closed 拒绝（deny）或转人工审批（approve，复用审批门），拒绝理由以工具错误文本模型可见 + `loom/budget-exceeded` SSE 合成事件（每条预算首越限广播一次）+ health 可观测面；策略裁决后预算检查（deny 预算覆盖 allow 策略，approve 预算把放行升级为审批）；v1 边界：计数器内存态重启清零（会话日志保留完整审计）。语义移植自 omnigent 治理层 spend-cap——`packages/web/src/budget.ts`、e2e `examples/gis/tests/budget.e2e.test.ts`（无 key：.http() 面 3 次调用 200/200/403 + 持续 fail-closed） | M9 | ✅ |
 | ACP 通道接入等后续演进 | Next | ⏳ |
 
 
@@ -41,4 +42,5 @@
 | M6 | Python 工具桥（loom-py）：内核保持 TS，Python 成为一等工具作者语言——✅ 已交付 |
 | M7 | 记忆与多用户：会话重启恢复 + 匿名/本地账号隔离 + loom memory（两阶段提取 + FTS 召回）——✅ 已交付 |
 | M8 | 路径记忆（失败触发召回 + 重验衰减）+ 插件生态（消费 session-query/frontend-static，生产 dsh-python-tools/dsh-web-approval-answerer）——✅ 已交付 |
+| M9 | 预算治理（app.policy budgets：tool-calls / session-tokens 量化预算，超限 fail-closed 或转审批；语义移植自 omnigent 治理层）——✅ 已交付 |
 

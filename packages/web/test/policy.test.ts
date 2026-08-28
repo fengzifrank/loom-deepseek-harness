@@ -89,3 +89,38 @@ describe('assertPolicySpec', () => {
     expect(() => assertPolicySpec(null)).toThrow()
   })
 })
+
+describe('assertPolicySpec：budgets 校验（M9）', () => {
+  it('合法预算通过（tool-calls / session-tokens / effect 可选）', () => {
+    expect(() => assertPolicySpec({
+      default: 'allow', rules: [],
+      budgets: [{ kind: 'tool-calls', max: 100, tool: 'gis_*' }],
+    })).not.toThrow()
+    expect(() => assertPolicySpec({
+      default: 'allow', rules: [],
+      budgets: [{ kind: 'session-tokens', max: 200_000, effect: 'approve' }],
+    })).not.toThrow()
+  })
+
+  it('非法 kind / max / tool / effect 逐一拒绝', () => {
+    expect(() => assertPolicySpec({ default: 'allow', rules: [], budgets: [{ kind: 'money', max: 1 }] })).toThrow(/kind/)
+    expect(() => assertPolicySpec({ default: 'allow', rules: [], budgets: [{ kind: 'tool-calls', max: 0 }] })).toThrow(/max/)
+    expect(() => assertPolicySpec({ default: 'allow', rules: [], budgets: [{ kind: 'tool-calls', max: 1.5 }] })).toThrow(/max/)
+    expect(() => assertPolicySpec({ default: 'allow', rules: [], budgets: [{ kind: 'tool-calls', max: 1, tool: '' }] })).toThrow(/tool/)
+    expect(() => assertPolicySpec({ default: 'allow', rules: [], budgets: [{ kind: 'tool-calls', max: 1, effect: 'stop' }] })).toThrow(/effect/)
+    expect(() => assertPolicySpec({ default: 'allow', rules: [], budgets: 'nope' })).toThrow(/budgets/)
+  })
+
+  it('session-tokens 不允许带 tool 模式（会话级总量）', () => {
+    expect(() => assertPolicySpec({
+      default: 'allow', rules: [],
+      budgets: [{ kind: 'session-tokens', max: 100, tool: 'gis_*' }],
+    })).toThrow(/session-tokens/)
+  })
+
+  it('budgets 透传到编译后的 spec 副本', () => {
+    const budgets = [{ kind: 'tool-calls' as const, max: 7 }]
+    const policy = compilePolicy({ default: 'allow', rules: [], budgets })
+    expect(policy.spec.budgets).toEqual(budgets)
+  })
+})
