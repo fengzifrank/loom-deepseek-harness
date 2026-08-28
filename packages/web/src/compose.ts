@@ -55,6 +55,12 @@ export interface ComposeOptions {
   }
   /** MCP 服务器声明（M10；每个服务器一块 dsh-mcp-client 行）。 */
   mcpServers?: readonly McpServerSpec[]
+  /**
+   * 技能根目录（M12；绝对路径，dev-worker/cli 按 loom.app.ts 所在目录解析相对
+   * 声明）。生成 dsh-skill + dsh-skill-filesystem（隔离模式：只扫这些目录）+
+   * dsh-tool-skill（模型面 skill 工具 + 会话目录热刷新）三行。
+   */
+  skillDirs?: readonly string[]
   /** 生产模式（loom start）：dist 目录绝对路径——compose 加 frontend-static 行占用 webserver 的 SPA fallback 单席。 */
   distDir?: string
   /** B2：dsh-python-tools 入口 URL 覆盖（测试用；缺省从 @loom-sdk/web 依赖解析）。 */
@@ -219,6 +225,25 @@ ${llm.routes.map(route => [
     if (server.failOnStartupError !== undefined) lines.push(`    failOnStartupError: ${server.failOnStartupError}`)
     return `\n${lines.join('\n')}`
   }).join('')
+  // M12：技能文件三行——注册表 + 文件系统提供方（隔离模式：只扫应用声明的目录，
+  // 不吃项目/.dsh/用户根，部署态自包含）+ 模型面 skill 工具（会话目录 + 按需加载）。
+  const skillsBlock = opts.skillDirs === undefined || opts.skillDirs.length === 0
+    ? ''
+    : `\n# 技能文件（app.skills 声明）：SKILL.md 目录 → 模型面 skill 工具 + 会话目录
+# （dsh-tool-skill：目录热刷新 digest；dsh-skill-filesystem：隔离模式只扫下面目录）。
+- id: skill
+  name: '@deepseek-ai/dsh-skill'
+
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    includeDefaultRoots: false
+    customSkillDirs:
+${opts.skillDirs.map(dir => `      - ${y(dir)}`).join('\n')}
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+`
   const distBlock = opts.distDir === undefined
     ? ''
     : `
@@ -275,7 +300,7 @@ ${llmBlock}
 
 - id: tools
   name: '@deepseek-ai/dsh-tools'
-${approvalBlock}${subagentBlock}${pythonBlock}${mcpBlock}
+${approvalBlock}${subagentBlock}${pythonBlock}${mcpBlock}${skillsBlock}
 - id: agent
   name: '@deepseek-ai/dsh-agent'
 

@@ -266,6 +266,18 @@ export interface AppSpec {
   providers?: Record<string, LlmProviderOptions>
   /** MCP 服务器（M10 生效；工具以 mcp__<serverName>__<rawName> 注册，走全局工具层与策略/审批门）。 */
   mcps?: McpServerSpec[]
+  /** 技能文件（M12 生效；SKILL.md 目录 → 模型面 skill 工具 + 会话目录热刷新）。 */
+  skills?: AppSkillsSpec
+}
+
+/** 技能文件声明（M12，接线 dsh-skill + dsh-skill-filesystem + dsh-tool-skill）。 */
+export interface AppSkillsSpec {
+  /**
+   * 技能根目录（相对 loom.app.ts 所在目录，或绝对路径）。每目录一层：
+   * `<dir>/<name>/SKILL.md` 或平铺 `<dir>/<name>.md`；frontmatter 必填
+   * kebab-case `name` + `description`（可选 whenToUse 等）。
+   */
+  readonly dirs: readonly string[]
 }
 
 /**
@@ -410,6 +422,13 @@ export interface App {
     toolCallTimeoutMs?: number
     failOnStartupError?: boolean
   }): App
+  /**
+   * 声明技能文件目录（M12 生效）：目录里的 `<name>/SKILL.md` / `<name>.md`
+   * 成为模型可加载的技能——会话开始时收到技能目录（名称+描述摘要），模型按需
+   * 调 `skill` 工具加载全文。默认目录 `['skills']`（相对 loom.app.ts）。
+   * FDE 交付姿势：知识文件（如植保指南）随应用走，不改代码。
+   */
+  skills(opts?: { dirs?: string[] }): App
 }
 
 /**

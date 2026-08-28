@@ -225,6 +225,7 @@ app.agent('data-analyst', {
 | 会话自动持久化/恢复 | persistence provider + `ctx.agents.resume` | ✅（headless 验证 resume 路径） |
 | `fork` 路由 | `ctx.sessions.fork(source, boundary?)`，必须切在完整 turn 边界（`docs/architecture.md:126`） | 🔬 |
 | 每 agent 不同工具集 | `ctx.tools` 的 scoped 注册 + `tools.restrict`（`docs/subsystems/tools.md`） | 🔬 |
+| `app.skills()`（M12） | 技能文件：SKILL.md 目录 → 模型面 `skill` 工具 + 会话目录 digest 热刷新（dsh-skill / dsh-skill-filesystem / dsh-tool-skill 三插件，隔离模式只扫应用目录）——知识随应用走，改知识不改代码，见 docs/skills.zh.md | ✅ |
 
 **Preset 关系**：静态、预组合的 agent 形态用内核 preset 表达（目录 + `agent.cordis.yml`，空会话可 `recompose`，`packages/preset/agent-presets/README.md`）；Loom 的 `app.agent` 覆盖"应用内声明、HTTP 寻址"的动态形态。两者同源（都是 cordis 组合），不冲突。
 
@@ -380,6 +381,10 @@ const chart = useToolResult(sessionId, 'render_pie_chart')   // 订阅特定工�
 | **M2 策略与回放** | app.policy 编译器 + 回放调试器（时间旅行：任意 seq 重建投影） | 写工具触发审批 UI；回放与实时投影逐事件一致 | approval seam、sessions.fork、jsonl 重放 |
 | **M3 通道与多智能体** | webhook 通道、子智能体声明（`app.agent.spawn`）、多 agent 页面编排 | GitHub issue → agent 自动处理的完整链路 | subagent providers、jobs、schedule |
 | **M4 客户端生成与评测** | typed client 生成器 + 从会话日志抽取评测集 | CI 中对真实 transcript 回放断言 | Code Mode 类型推导先例、persistence 查询 |
+
+> M12 起评测升级为三级判定（`pass / pass-with-caveats / fail`，oci-agent 移植）：
+> `ev.caveat('…')` 记非阻断保留，断言抛错仍是 fail（阻断优先）——交付验收可以表达
+> "满意但有保留"。演员-评论家模式（critic 子智能体 + 修订循环）见 docs/critic-pattern.zh.md。
 
 版本策略：跟随内核 major（内核 v0.x 期明确 breaking，`README.md:11`）；Loom 在 v0.x 期同样不承诺稳定 API。
 

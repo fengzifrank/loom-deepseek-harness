@@ -1,18 +1,12 @@
 {
-  "name": "gis-example",
+  "name": "critic-demo-example",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Loom 第一个应用：国土 GIS 平台（白皮书 §7 的声明式重写）",
+  "description": "Loom 演员-评论家模式示例：处方草拟 worker + 结构化判定 critic 子智能体（oci-agent 模式移植）",
   "scripts": {
     "loom": "loom",
-    "client": "loom client",
-    "openapi": "loom openapi -o openapi.json",
-    "eval": "loom eval evals",
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest run"
+    "dev": "loom dev"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "4.0.1",
@@ -56,13 +50,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "1.17.5",
-    "@types/node": "24.13.3",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
-    "@vitejs/plugin-react": "6.0.5",
     "tsx": "4.23.12",
-    "typescript": "5.9.3",
-    "vite": "8.2.1"
+    "typescript": "5.9.3"
   }
 }

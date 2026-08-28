@@ -583,14 +583,22 @@ async function evalCommand(args: string[]): Promise<void> {
   for (const { spec, file } of specs) {
     const result = await runEval(spec, { fixtureDir: evalsDir })
     results.push(result)
-    if (result.ok) {
+    if (result.verdict === 'pass') {
       process.stdout.write(`✓ ${result.name}（${spec.fixture}，${result.eventCount} 事件，${result.durationMs}ms）\n`)
+    } else if (result.verdict === 'pass-with-caveats') {
+      process.stdout.write(`⚠ ${result.name}（${spec.fixture}，${result.eventCount} 事件）满意但有保留：\n`)
+      for (const caveat of result.caveats) process.stdout.write(`    - ${caveat}\n`)
     } else {
       process.stdout.write(`✗ ${result.name}（${file}）失败：${result.error}\n`)
     }
   }
   const failed = results.filter(result => !result.ok).length
-  process.stdout.write(`loom eval: ${results.length - failed}/${results.length} 通过\n`)
+  const withCaveats = results.filter(result => result.verdict === 'pass-with-caveats').length
+  const passed = results.length - failed
+  const summary = withCaveats > 0
+    ? `loom eval: ${passed}/${results.length} 通过（其中 ${withCaveats} 例满意但有保留 ⚠）`
+    : `loom eval: ${passed}/${results.length} 通过`
+  process.stdout.write(`${summary}\n`)
   if (failed > 0) process.exit(1)
 }
 

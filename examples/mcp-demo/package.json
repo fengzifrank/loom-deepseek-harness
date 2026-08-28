@@ -45,5 +45,9 @@
     "echarts": "6.1.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "tsx": "4.23.12",
+    "typescript": "5.9.3"
   }
 }

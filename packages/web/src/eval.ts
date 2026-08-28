@@ -138,6 +138,13 @@ export interface EvalContext {
   text(): string
   /** 断言辅助。 */
   readonly expect: EvalExpect
+  /**
+   * 记一条非阻断告警（M12，oci-agent 的 blocker/warner 区分）：断言全部通过但
+   * 存在告警 → 判定 pass-with-caveats（满意但有保留）。空消息直接抛错（fail-closed）。
+   */
+  caveat(message: string): void
+  /** 已记录的告警（活视图；runEval 在断言结束后读取）。 */
+  readonly caveats: readonly string[]
 }
 
 /** turn/end 的 reason 归一（内核是 { kind } 对象；旧日志可能是字符串）。 */
@@ -199,6 +206,15 @@ export function buildEvalContext(events: readonly EvalEvent[]): EvalContext {
       .map(event => textOfBlocks(event.data?.message?.content))
       .join('')
 
+  // M12：非阻断告警收集（断言全过 + 有告警 = pass-with-caveats）。
+  const caveats: string[] = []
+  const caveat = (message: string): void => {
+    if (typeof message !== 'string' || message.trim() === '') {
+      throw new Error('caveat() 需要非空告警消息（fail-closed：告警本身写错按失败处理）')
+    }
+    caveats.push(message)
+  }
+
   const fail = (message: string): never => {
     throw new Error(message)
   }
@@ -258,6 +274,8 @@ export function buildEvalContext(events: readonly EvalEvent[]): EvalContext {
     orderOf: (...types: string[]) => types.map(type => events.find(event => event.type === type)?.seq),
     text,
     expect,
+    caveat,
+    caveats,
   }
 }
 
@@ -286,15 +304,25 @@ export function defineEval(def: EvalSpec): EvalSpec {
 /** 单个用例的运行结果。 */
 export interface EvalResult {
   name: string
+  /** 兼容字段 = verdict !== 'fail'。 */
   ok: boolean
+  /**
+   * 三级判定（M12，oci-agent 的 fully_satisfactory/satisfactory_with_caveats/
+   * not_satisfactory 移植）：pass 全过无告警 / pass-with-caveats 全过有告警 /
+   * fail 断言抛错或夹具不可读（fail-closed）。
+   */
+  verdict: 'pass' | 'pass-with-caveats' | 'fail'
+  /** 已记录的非阻断告警（verdict=pass-with-caveats 时非空）。 */
+  caveats: string[]
   /** 夹具事件数（成功时展示；失败也有）。 */
   eventCount: number
-  /** 失败原因（ok=false 时）。 */
+  /** 失败原因（verdict=fail 时）。 */
   error?: string
   durationMs: number
 }
 
-/** 运行一个用例：加载夹具 → 建视图 → 跑断言（捕获一切错误为失败）。 */
+/** 运行一个用例：加载夹具 → 建视图 → 跑断言（捕获一切错误为失败；断言抛错即
+ * fail——即使之前已记告警（阻断优先于保留，oci-agent 的 blocker 语义）。 */
 export async function runEval(spec: EvalSpec, opts: { fixtureDir?: string } = {}): Promise<EvalResult> {
   const started = Date.now()
   const fixturePath = isAbsolute(spec.fixture) ? spec.fixture : resolve(opts.fixtureDir ?? process.cwd(), spec.fixture)
@@ -302,15 +330,19 @@ export async function runEval(spec: EvalSpec, opts: { fixtureDir?: string } = {}
   try {
     events = readEventsFile(fixturePath)
   } catch (error) {
-    return { name: spec.name, ok: false, eventCount: 0, error: `夹具读取失败（${fixturePath}）：${String(error)}`, durationMs: Date.now() - started }
+    return { name: spec.name, ok: false, verdict: 'fail', caveats: [], eventCount: 0, error: `夹具读取失败（${fixturePath}）：${String(error)}`, durationMs: Date.now() - started }
   }
   if (events.length === 0) {
-    return { name: spec.name, ok: false, eventCount: 0, error: `夹具为空或没有可保留事件（${fixturePath}）`, durationMs: Date.now() - started }
+    return { name: spec.name, ok: false, verdict: 'fail', caveats: [], eventCount: 0, error: `夹具为空或没有可保留事件（${fixturePath}）`, durationMs: Date.now() - started }
   }
   try {
-    await spec.assert(buildEvalContext(events))
-    return { name: spec.name, ok: true, eventCount: events.length, durationMs: Date.now() - started }
+    const context = buildEvalContext(events)
+    await spec.assert(context)
+    const caveats = [...context.caveats]
+    return caveats.length === 0
+      ? { name: spec.name, ok: true, verdict: 'pass', caveats, eventCount: events.length, durationMs: Date.now() - started }
+      : { name: spec.name, ok: true, verdict: 'pass-with-caveats', caveats, eventCount: events.length, durationMs: Date.now() - started }
   } catch (error) {
-    return { name: spec.name, ok: false, eventCount: events.length, error: String(error instanceof Error ? error.message : error), durationMs: Date.now() - started }
+    return { name: spec.name, ok: false, verdict: 'fail', caveats: [], eventCount: events.length, error: String(error instanceof Error ? error.message : error), durationMs: Date.now() - started }
   }
 }

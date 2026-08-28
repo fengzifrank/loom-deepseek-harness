@@ -21,6 +21,7 @@ import type {
   AppAuthSpec,
   AppMemorySpec,
   AppPythonSpec,
+  AppSkillsSpec,
   AppSpec,
   DefineAppOptions,
   LlmProviderOptions,
@@ -226,6 +227,7 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
     provider?: string
     providers?: Record<string, LlmProviderOptions>
     mcps?: McpServerSpec[]
+    skills?: AppSkillsSpec
   } = {
     name,
     model: opts.model ?? DEFAULT_MODEL,
@@ -470,6 +472,27 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
         ...(subOpts.tools === undefined ? {} : { tools: [...subOpts.tools] }),
         visibleTo: [...subOpts.visibleTo],
       })
+      return app
+    },
+
+    /**
+     * 声明技能文件目录（M12）：目录里的 `<name>/SKILL.md` / `<name>.md` 成为
+     * 模型可加载技能（会话开始收到目录摘要，模型按需调 skill 工具加载全文）。
+     */
+    skills(skillsOpts: { dirs?: string[] } = {}) {
+      if (spec.skills !== undefined) {
+        throw new Error(`defineApp(${name}): 重复的 app.skills(...) 声明`)
+      }
+      const dirs = skillsOpts.dirs ?? ['skills']
+      if (!Array.isArray(dirs) || dirs.length === 0) {
+        throw new Error(`defineApp(${name}).skills() 的 dirs 必须是非空字符串数组，收到 ${JSON.stringify(dirs)}`)
+      }
+      for (const dir of dirs) {
+        if (typeof dir !== 'string' || dir.trim() === '') {
+          throw new Error(`defineApp(${name}).skills() 的 dirs 每项必须是非空字符串（相对 loom.app.ts 或绝对路径），收到 ${JSON.stringify(dir)}`)
+        }
+      }
+      spec.skills = { dirs: [...dirs] }
       return app
     },
 

@@ -4,7 +4,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { register } from 'tsx/esm/api'
 
@@ -91,9 +91,13 @@ export async function bootLoom(opts: BootOptions): Promise<BootedLoom> {
         providers?: Record<string, unknown>
         agents?: Array<{ model?: string }>
         mcps?: Array<Record<string, unknown>>
+        skills?: { dirs: string[] }
       }
     | undefined
   if (appSpec === undefined) throw new Error(`bootLoom: ${opts.appModulePath} 缺少 defineApp default 导出`)
+  // M12：技能目录按 loom.app.ts 所在目录解析（与 dev-worker 同规则）。
+  const appDir = dirname(opts.appModulePath)
+  const skillDirs = appSpec.skills?.dirs.map(dir => (isAbsolute(dir) ? dir : resolve(appDir, dir)))
   const outDir = resolve(GIS_DIR, opts.outDirName)
   // 预清理（幂等）：Windows 上上一轮的 afterAll 清理可能因句柄延迟释放失败而
   // 留下残留——带着旧 sidecar 索引 boot 会改变行为（M7 起 keyed 会话会被
@@ -139,6 +143,7 @@ export async function bootLoom(opts: BootOptions): Promise<BootedLoom> {
     withApproval: opts.withApproval,
     llm: resolveLlm(appSpec),
     ...(appSpec.mcps === undefined || appSpec.mcps.length === 0 ? {} : { mcpServers: appSpec.mcps as never }),
+    ...(skillDirs === undefined ? {} : { skillDirs }),
     ...(opts.withSubagent === undefined ? {} : { withSubagent: opts.withSubagent }),
     ...(opts.withPython === undefined ? {} : { withPython: opts.withPython }),
     ...(opts.pythonConfig === undefined ? {} : { pythonConfig: opts.pythonConfig }),

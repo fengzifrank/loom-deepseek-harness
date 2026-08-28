@@ -1,6 +1,6 @@
 # Loom 状态与路线图（status.zh.md）
 
-> 状态总览与里程碑详情。当前一句话：**M1-M9 全量交付，测试全绿，已开源。**
+> 状态总览与里程碑详情。当前一句话：**M1-M12 全量交付，测试全绿，已开源。**
 
 ## 状态总览
 
@@ -29,6 +29,9 @@
 | **预算治理**：`app.policy({ budgets: [...] })` 量化预算——每会话 `tool-calls`（glob 模式计数，计尝试不计成功，被拒的调用也计数防试探绕过）与 `session-tokens`（assistant 消息 usage 四桶 input/output/cacheRead/cacheWrite 求和）；超限 fail-closed 拒绝（deny）或转人工审批（approve，复用审批门），拒绝理由以工具错误文本模型可见 + `loom/budget-exceeded` SSE 合成事件（每条预算首越限广播一次）+ health 可观测面；策略裁决后预算检查（deny 预算覆盖 allow 策略，approve 预算把放行升级为审批）；v1 边界：计数器内存态重启清零（会话日志保留完整审计）。语义移植自 omnigent 治理层 spend-cap——`packages/web/src/budget.ts`、e2e `examples/gis/tests/budget.e2e.test.ts`（无 key：.http() 面 3 次调用 200/200/403 + 持续 fail-closed） | M9 | ✅ |
 | **模型网关**：`defineApp(name, { provider, providers })` 一行切换模型提供方——预设 `deepseek-official`（缺省，字节级向后兼容）/`ollama`（内网本地，农业 FDE 私有化）/`openrouter`（云端聚合）/`openai-compatible`（vLLM 自建，覆盖自定义路由名）；组合层 `dsh-llm-deepseek` ⇄ `dsh-llm-pi-ai` 多路由自动切换（route 键 = agent-default-model provider 名）；非 catalog 路由 models 目录自动含应用默认 model + 各 agent model 覆盖；无凭据路由自动带匿名 Authorization 占位头（pi-ai OpenAI 兼容协议强制要求 key 或头其一）；凭据只经 apiKeyEnv 引用（机密不进 yml）；声明期收口（未知预设/缺 baseURL/空目录/非法协议 boot 前抛错）——见 [docs/providers.zh.md](docs/providers.zh.md)；e2e `examples/gis/tests/gateway.e2e.test.ts`（mock OpenAI 兼容服务器跑通完整轮次，零 DEEPSEEK key） | M11 | ✅ |
 | **MCP 桥接**：`app.mcp(serverName, { transport, ... })` 接入 Model Context Protocol 生态——stdio 子进程 / streamable-http 远程端点，工具以 `mcp__<server>__<rawName>` 注册（Claude Code/Codex 同命名形，内核 dsh-mcp-client：断线退避重连 + 工具列表重同步 + 注册冲突世代回滚 + HMR）；**策略/审批/预算零成本组合**（MCP 工具就是普通工具，过同一 pre-execute 管线）；机密只经 envRef/headerRefs 环境变量名引用（生成 !!js process.env 展开，不进 yml）；声明期校验（serverName 命名约束/传输互斥字段/envRef 合法性）；v1 边界：全局工具层全部 agent 可见（与 Python 桥一致），无 per-server allowlist（policy glob 替代）——见 [docs/mcp.zh.md](docs/mcp.zh.md)；e2e `examples/gis/tests/mcp.e2e.test.ts`（本地 stdio echo 服务器：boot 注册证据 + 带 key 真实模型调用 mcp__echo__say 全链 SSE）；人用示例 `examples/mcp-demo`（filesystem 服务器 + 写审批 + 预算） | M10 | ✅ |
+| **技能文件**：`app.skills({ dirs? })` 一行声明（缺省 `skills/`，相对 loom.app.ts）——`<name>/SKILL.md` / 平铺 `<name>.md`（frontmatter 必填 kebab-case name + description）成为模型可加载技能：会话首请求前收到目录摘要（digest 热刷新），按需调 `skill` 工具加载全文（每次加载重读，改正文即时生效）；组合接线内核三插件 dsh-skill / dsh-skill-filesystem / dsh-tool-skill，**隔离模式**（includeDefaultRoots: false，只扫应用声明目录——部署态自包含）；声明期校验（空目录数组/空字符串拒绝）——见 [docs/skills.zh.md](docs/skills.zh.md)；e2e `examples/gis/tests/skills.e2e.test.ts`（无 key 组合段 + 带 key：模型加载 greeting-guide 并按规范回答"施主…祝君安康"） | M12 | ✅ |
+| **评估三级判定**：`loom eval` 从二元 pass/fail 升级为 `pass / pass-with-caveats / fail`（oci-agent fully_satisfactory/satisfactory_with_caveats/not_satisfactory 移植）——断言上下文新增 `ev.caveat('…')` 非阻断告警（blocker/warner 二分：断言抛错即 fail 且阻断优先，即使先记了告警；空告警消息 fail-closed）；CLI ✓/⚠/✗ 三态输出 + 汇总含保留计数（只有 fail 退出码 1）；`ok` 字段保持兼容（= verdict !== 'fail'），既有 evals 零改动 | M12 | ✅ |
+| **演员-评论家模式**：oci-agent actor-critic 循环的 Loom 表达——critic 子智能体（`tools: []` 纯推理、只输出三级 satisfaction JSON）+ worker persona 承载修订纪律（not_satisfactory 必须修订再复核、最多一次防拉扯、caveats 如实转述）+ 落笔走审批门（LLM 写判定，代码做门禁）；离线孪生即上面的三级 eval——见 [docs/critic-pattern.zh.md](docs/critic-pattern.zh.md) 与示例 `examples/critic-demo`（处方草拟 → 复核 → 修订 → 审批归档） | M12 | ✅ |
 | ACP 通道接入等后续演进 | Next | ⏳ |
 
 
@@ -47,4 +50,5 @@
 | M9 | 预算治理（app.policy budgets：tool-calls / session-tokens 量化预算，超限 fail-closed 或转审批；语义移植自 omnigent 治理层）——✅ 已交付 |
 | M11 | 模型网关（provider 一行切换 Ollama/OpenRouter/OpenAI 兼容；组合层接线 dsh-llm-pi-ai 多路由）——✅ 已交付 |
 | M10 | MCP 桥接（app.mcp 声明器 + dsh-mcp-client 接线；工具过同一策略/审批/预算管线）——✅ 已交付 |
+| M12 | 技能文件（app.skills + dsh-skill 三插件接线，SKILL.md 知识随应用走）+ 评估三级判定（pass/pass-with-caveats/fail，oci-agent 移植）+ 演员-评论家模式（critic 子智能体 + examples/critic-demo）——✅ 已交付 |
 

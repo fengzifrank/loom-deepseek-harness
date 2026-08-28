@@ -87,6 +87,10 @@ export async function bootApp(entryPath: string, opts: { production?: boolean } 
     withPython: app.spec.python !== undefined,
     ...(app.spec.python === undefined ? {} : { pythonConfig: app.spec.python }),
     ...(app.spec.mcps === undefined || app.spec.mcps.length === 0 ? {} : { mcpServers: app.spec.mcps }),
+    // M12：技能目录按 loom.app.ts 所在目录解析（声明保持相对，组合层吃绝对）。
+    ...(app.spec.skills === undefined ? {} : {
+      skillDirs: app.spec.skills.dirs.map(dir => (isAbsolute(dir) ? dir : resolve(appDir, dir))),
+    }),
     ...(distDir === undefined ? {} : { distDir }),
     // M11：官方缺省走 dsh-llm-deepseek（向后兼容）；声明 provider 时解析为 pi-ai 路由
     //（声明期诚实失败：未知预设/缺 baseURL 直接 boot 前抛错）。

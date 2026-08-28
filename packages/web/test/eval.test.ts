@@ -146,3 +146,77 @@ describe('defineEval / runEval', () => {
     }
   })
 })
+
+describe('三级判定（M12：pass / pass-with-caveats / fail）', () => {
+  const writeFixture = (dir: string): string => {
+    const fixture = join(dir, 'f.jsonl')
+    writeFileSync(fixture, slimSessionLog([
+      line({ type: 'turn/start', seq: 1, data: { turn: 1 } }),
+      line({ type: 'tool/call', seq: 2, data: { callId: 'c1', name: 'gis_query_land_types', arguments: '{}' } }),
+      line({ type: 'tool/result', seq: 3, data: { message: { source: { callId: 'c1' }, content: [{ type: 'text', text: '{"totalAreaSqm": 1}', isError: false }] } } }),
+      line({ type: 'assistant/message', seq: 4, data: { message: { content: [{ type: 'text', text: '合计约 1 平方米' }] } } }),
+      line({ type: 'turn/end', seq: 5, data: { turn: 1, reason: { kind: 'completed' } } }),
+    ]).join('\n'), 'utf8')
+    return fixture
+  }
+
+  it('无告警 → pass；有告警且断言全过 → pass-with-caveats（ok 仍为 true）', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'loom-eval-'))
+    try {
+      writeFixture(dir)
+      const pass = await runEval(defineEval({ name: 'p', fixture: 'f.jsonl', assert(e) { e.expect.toolCalled('gis_query_land_types') } }), { fixtureDir: dir })
+      expect(pass.verdict).toBe('pass')
+      expect(pass.caveats).toEqual([])
+      expect(pass.ok).toBe(true)
+
+      const caveat = await runEval(defineEval({
+        name: 'c', fixture: 'f.jsonl',
+        assert(e) {
+          e.expect.toolCalled('gis_query_land_types')
+          e.caveat('回答未引用占比数字（满意但有保留）')
+          e.caveat('工具只调了一次，未做交叉核对')
+        },
+      }), { fixtureDir: dir })
+      expect(caveat.verdict).toBe('pass-with-caveats')
+      expect(caveat.ok).toBe(true)
+      expect(caveat.caveats).toHaveLength(2)
+      expect(caveat.caveats[0]).toContain('占比')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('断言抛错 → fail（阻断优先：即使先记了告警也按失败，caveats 不上报表）', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'loom-eval-'))
+    try {
+      writeFixture(dir)
+      const result = await runEval(defineEval({
+        name: 'f', fixture: 'f.jsonl',
+        assert(e) {
+          e.caveat('先记一条告警')
+          e.expect.toolCalled('never_called')
+        },
+      }), { fixtureDir: dir })
+      expect(result.verdict).toBe('fail')
+      expect(result.ok).toBe(false)
+      expect(result.error).toMatch(/never_called/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('caveat 空消息 → fail-closed（按失败处理，不给"看似发生过"的结果）', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'loom-eval-'))
+    try {
+      writeFixture(dir)
+      const result = await runEval(defineEval({
+        name: 'e', fixture: 'f.jsonl',
+        assert(e) { (e.caveat as unknown as (m: string) => void)('  ') },
+      }), { fixtureDir: dir })
+      expect(result.verdict).toBe('fail')
+      expect(result.error).toMatch(/caveat/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
