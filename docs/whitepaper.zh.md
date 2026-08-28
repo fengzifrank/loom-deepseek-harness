@@ -198,6 +198,7 @@ const queryLandTypes = app.tool('query_land_types')
 | `.input/.output/.execute` | `ctx.tools.register(defineTool({...}))`——DSL 校验参数、canonical JSON 输出契约、`output.render` 投影（`docs/cookbook/adding-a-tool.md:17-36`） | ✅（shop-demo/gis-bridge 均用此契约） |
 | `.card(...)` | `presentCall`/`presentResult` 渲染意图，纯函数保证回放重现（`docs/cookbook/adding-a-tool.md:71-90`） | ✅（内核工具已用；Loom 声明化） |
 | `.http(...)` | `ctx.webServer.register({kind:'exact', path, handler})`，handler 拥有完整响应生命周期（`packages/host/webserver/src/index.ts:94`） | ✅（gis-bridge 的 /~gis/* 路由验证） |
+| `app.mcp(...)`（M10） | 外部 MCP 服务器工具接入：`mcp__<server>__<rawName>` 注册（dsh-mcp-client：重连退避/世代回滚/HMR），**照常过策略/审批/预算管线**；机密只经 envRef/headerRefs 引用——见 docs/mcp.zh.md | ✅ |
 | typed client 生成 | 从注册 schema 白名单投影生成 TS（`wireSchemas` 只白名单 name/description/parameters，`packages/core/tools/src/index.ts:1234-1267`）；类型推导先例：Code Mode 的 `ToolArgsMap`/`ToolOutputMap`（`docs/cookbook/adding-a-tool.md:63`） | 🔬 |
 
 ### 5.3 智能体：声明即路由

@@ -85,7 +85,13 @@ export async function bootLoom(opts: BootOptions): Promise<BootedLoom> {
   ensureTsx()
   const appModule = (await import(pathToFileURL(opts.appModulePath).href)) as { default?: { spec?: unknown } }
   const appSpec = appModule.default?.spec as
-    | { model: string; provider?: string; providers?: Record<string, unknown>; agents?: Array<{ model?: string }> }
+    | {
+        model: string
+        provider?: string
+        providers?: Record<string, unknown>
+        agents?: Array<{ model?: string }>
+        mcps?: Array<Record<string, unknown>>
+      }
     | undefined
   if (appSpec === undefined) throw new Error(`bootLoom: ${opts.appModulePath} 缺少 defineApp default 导出`)
   const outDir = resolve(GIS_DIR, opts.outDirName)
@@ -132,6 +138,7 @@ export async function bootLoom(opts: BootOptions): Promise<BootedLoom> {
     apiPrefix: '/~loom',
     withApproval: opts.withApproval,
     llm: resolveLlm(appSpec),
+    ...(appSpec.mcps === undefined || appSpec.mcps.length === 0 ? {} : { mcpServers: appSpec.mcps as never }),
     ...(opts.withSubagent === undefined ? {} : { withSubagent: opts.withSubagent }),
     ...(opts.withPython === undefined ? {} : { withPython: opts.withPython }),
     ...(opts.pythonConfig === undefined ? {} : { pythonConfig: opts.pythonConfig }),

@@ -264,6 +264,40 @@ export interface AppSpec {
   provider?: string
   /** 提供方路由覆盖/自定义路由（M11 生效；键 = 路由名，配合 provider 使用）。 */
   providers?: Record<string, LlmProviderOptions>
+  /** MCP 服务器（M10 生效；工具以 mcp__<serverName>__<rawName> 注册，走全局工具层与策略/审批门）。 */
+  mcps?: McpServerSpec[]
+}
+
+/**
+ * 一个 MCP 服务器的声明（M10，接线 @deepseek-ai/dsh-mcp-client）。
+ * v1 边界：工具注册在全局层，全部 agent 可见（与 Python 桥一致）；按 agent 收敛
+ * 见 docs/mcp.zh.md 的边界说明。策略/审批照常生效（规则用 mcp__<name>__* 模式）。
+ */
+export interface McpServerSpec {
+  /** 命名空间（工具名前缀）；[A-Za-z0-9_-]{1,32}，存活实例内唯一。 */
+  readonly serverName: string
+  /** 传输方式：stdio（本地子进程）/ streamable-http（远程端点）。 */
+  readonly transport: 'stdio' | 'streamable-http'
+  /** stdio：要 spawn 的可执行文件。 */
+  readonly command?: string
+  /** stdio：传给命令的参数。 */
+  readonly args?: readonly string[]
+  /** stdio：合并进子进程环境的明文变量（非机密）。 */
+  readonly env?: Record<string, string>
+  /** stdio：机密引用（环境变量名）——yml 里生成 !!js process.env.<name>，机密不进文件。 */
+  readonly envRef?: readonly string[]
+  /** stdio：子进程工作目录。 */
+  readonly cwd?: string
+  /** http：MCP 服务器 URL。 */
+  readonly url?: string
+  /** http：明文请求头（非机密）。 */
+  readonly headers?: Record<string, string>
+  /** http：机密请求头引用（头名 → 环境变量名）。 */
+  readonly headerRefs?: Record<string, string>
+  /** 每次 callTool 的超时（毫秒；默认 60000）。 */
+  readonly toolCallTimeoutMs?: number
+  /** 初始连接/工具同步失败时拒绝插件激活（默认 false：记日志但继续）。 */
+  readonly failOnStartupError?: boolean
 }
 
 /** 单个模型提供方路由的声明（M11）。 */
@@ -357,6 +391,25 @@ export interface App {
    * 建议在 policy 里给 memory_forget 配 approve（删除记忆是破坏性写）。
    */
   memory(opts?: { extraction?: boolean | { maxPerTurn?: number }; recall?: boolean | { topK?: number } }): App
+  /**
+   * 声明一个 MCP 服务器（M10 生效）：连接外部 Model Context Protocol 服务器，
+   * 其工具以 `mcp__<serverName>__<rawName>` 注册（与 Claude Code/Codex 同命名形）。
+   * v1 注册在全局工具层（全部 agent 可见，与 Python 桥一致）；策略/审批照常生效。
+   * 机密只经 envRef/headerRefs 环境变量引用——不进声明，也不进生成的 cordis.yml。
+   */
+  mcp(serverName: string, opts: {
+    transport: 'stdio' | 'streamable-http'
+    command?: string
+    args?: readonly string[]
+    env?: Record<string, string>
+    envRef?: readonly string[]
+    cwd?: string
+    url?: string
+    headers?: Record<string, string>
+    headerRefs?: Record<string, string>
+    toolCallTimeoutMs?: number
+    failOnStartupError?: boolean
+  }): App
 }
 
 /**

@@ -11,6 +11,7 @@ import { join } from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import type { ResolvedLlm } from './providers.js'
+import type { McpServerSpec } from './types.js'
 
 /**
  * 解析 workspace 插件包的入口 file:/// URL（B2 生产侧：python-tools /
@@ -52,6 +53,8 @@ export interface ComposeOptions {
     restartLimit?: number
     callTimeoutMs?: number
   }
+  /** MCP 服务器声明（M10；每个服务器一块 dsh-mcp-client 行）。 */
+  mcpServers?: readonly McpServerSpec[]
   /** 生产模式（loom start）：dist 目录绝对路径——compose 加 frontend-static 行占用 webserver 的 SPA fallback 单席。 */
   distDir?: string
   /** B2：dsh-python-tools 入口 URL 覆盖（测试用；缺省从 @loom-sdk/web 依赖解析）。 */
@@ -170,6 +173,52 @@ ${llm.routes.map(route => [
         return `\n${lines.join('\n')}`
       })()
     : ''
+  // M10：每个 MCP 服务器一块 dsh-mcp-client 行——工具以 mcp__<serverName>__<rawName>
+  // 注册（全局层），策略/审批照常生效。机密只经 envRef/headerRefs 生成 !!js
+  // process.env 引用（cordis 加载器求值），明文 env/headers 原样写入。
+  const mcpBlock = (opts.mcpServers ?? []).map(server => {
+    const lines = [
+      '',
+      `# MCP 服务器 "${server.serverName}"（app.mcp 声明）：工具以 mcp__${server.serverName}__<rawName>`,
+      '# 注册到全局工具层（断线指数退避重连 + 世代回滚；HMR 热替换）。',
+      `- id: mcp-${server.serverName}`,
+      "  name: '@deepseek-ai/dsh-mcp-client'",
+      '  config:',
+      `    serverName: ${y(server.serverName)}`,
+      `    transport: ${server.transport}`,
+    ]
+    if (server.transport === 'stdio') {
+      lines.push(`    command: ${y(server.command!)}`)
+      if (server.args !== undefined && server.args.length > 0) {
+        lines.push('    args:')
+        for (const arg of server.args) lines.push(`      - ${y(arg)}`)
+      } else {
+        lines.push('    args: []')
+      }
+      const envEntries: Array<readonly [string, string]> = [
+        ...Object.entries(server.env ?? {}).map(([key, value]) => [key, y(value)] as const),
+        ...(server.envRef ?? []).map(ref => [ref, `!!js process.env.${ref}`] as const),
+      ]
+      if (envEntries.length > 0) {
+        lines.push('    env:')
+        for (const [key, value] of envEntries) lines.push(`      ${y(key)}: ${value}`)
+      }
+      if (server.cwd !== undefined) lines.push(`    cwd: ${y(server.cwd)}`)
+    } else {
+      lines.push(`    url: ${y(server.url!)}`)
+      const headerEntries: Array<readonly [string, string]> = [
+        ...Object.entries(server.headers ?? {}).map(([name, value]) => [name, y(value)] as const),
+        ...Object.entries(server.headerRefs ?? {}).map(([name, ref]) => [name, `!!js \`Bearer \${process.env.${ref}}\``] as const),
+      ]
+      if (headerEntries.length > 0) {
+        lines.push('    headers:')
+        for (const [key, value] of headerEntries) lines.push(`      ${y(key)}: ${value}`)
+      }
+    }
+    if (server.toolCallTimeoutMs !== undefined) lines.push(`    toolCallTimeoutMs: ${server.toolCallTimeoutMs}`)
+    if (server.failOnStartupError !== undefined) lines.push(`    failOnStartupError: ${server.failOnStartupError}`)
+    return `\n${lines.join('\n')}`
+  }).join('')
   const distBlock = opts.distDir === undefined
     ? ''
     : `
@@ -226,7 +275,7 @@ ${llmBlock}
 
 - id: tools
   name: '@deepseek-ai/dsh-tools'
-${approvalBlock}${subagentBlock}${pythonBlock}
+${approvalBlock}${subagentBlock}${pythonBlock}${mcpBlock}
 - id: agent
   name: '@deepseek-ai/dsh-agent'
 

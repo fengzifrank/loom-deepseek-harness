@@ -24,6 +24,7 @@ import type {
   AppSpec,
   DefineAppOptions,
   LlmProviderOptions,
+  McpServerSpec,
   PolicySpec,
   ProjectionEvent,
   ProjectionSpec,
@@ -56,6 +57,7 @@ export type {
   InferToolArgs,
   InferToolOutput,
   LlmProviderOptions,
+  McpServerSpec,
   PolicySpec,
   ProjectionEvent,
   ProjectionSpec,
@@ -223,6 +225,7 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
     memory?: AppMemorySpec
     provider?: string
     providers?: Record<string, LlmProviderOptions>
+    mcps?: McpServerSpec[]
   } = {
     name,
     model: opts.model ?? DEFAULT_MODEL,
@@ -235,6 +238,7 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
     subagents: [],
     ...(opts.provider === undefined ? {} : { provider: opts.provider }),
     ...(opts.providers === undefined ? {} : { providers: { ...opts.providers } }),
+    mcps: [],
   }
 
   const app: App = {
@@ -490,6 +494,71 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
         ...(authOpts.mode === undefined ? {} : { mode: authOpts.mode }),
         ...(authOpts.corsOrigins === undefined ? {} : { corsOrigins: [...authOpts.corsOrigins!] }),
       }
+      return app
+    },
+
+    /**
+     * 声明一个 MCP 服务器（M10）：工具以 `mcp__<serverName>__<rawName>` 注册到全局
+     * 工具层（v1 全部 agent 可见），策略/审批照常生效（`{ tool: 'mcp__github__*', effect: 'approve' }`）。
+     * 机密只经 envRef/headerRefs 环境变量引用，不进声明与生成的 yml。
+     */
+    mcp(serverName: string, mcpOpts: {
+      transport: 'stdio' | 'streamable-http'
+      command?: string
+      args?: readonly string[]
+      env?: Record<string, string>
+      envRef?: readonly string[]
+      cwd?: string
+      url?: string
+      headers?: Record<string, string>
+      headerRefs?: Record<string, string>
+      toolCallTimeoutMs?: number
+      failOnStartupError?: boolean
+    }) {
+      if (!/^[A-Za-z0-9_-]{1,32}$/.test(serverName)) {
+        throw new Error(`defineApp(${name}).mcp() 的 serverName 必须匹配 [A-Za-z0-9_-]{1,32}（dsh-mcp-client 约定），收到 ${JSON.stringify(serverName)}`)
+      }
+      if (spec.mcps!.some(server => server.serverName === serverName)) {
+        throw new Error(`defineApp(${name}).mcp(): 重复的 serverName "${serverName}"`)
+      }
+      if (mcpOpts.transport !== 'stdio' && mcpOpts.transport !== 'streamable-http') {
+        throw new Error(`defineApp(${name}).mcp("${serverName}") 的 transport 必须是 "stdio" / "streamable-http"，收到 ${JSON.stringify(mcpOpts.transport)}`)
+      }
+      if (mcpOpts.transport === 'stdio') {
+        if (typeof mcpOpts.command !== 'string' || mcpOpts.command.trim() === '') {
+          throw new Error(`defineApp(${name}).mcp("${serverName}")：stdio 传输必须给 command（要 spawn 的可执行文件）`)
+        }
+        if (mcpOpts.url !== undefined) throw new Error(`defineApp(${name}).mcp("${serverName}")：stdio 传输不支持 url`)
+      } else {
+        if (typeof mcpOpts.url !== 'string' || !/^https?:\/\//.test(mcpOpts.url)) {
+          throw new Error(`defineApp(${name}).mcp("${serverName}")：streamable-http 传输必须给 http(s):// 的 url`)
+        }
+        if (mcpOpts.command !== undefined) throw new Error(`defineApp(${name}).mcp("${serverName}")：streamable-http 传输不支持 command/args`)
+      }
+      for (const ref of mcpOpts.envRef ?? []) {
+        if (typeof ref !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(ref)) {
+          throw new Error(`defineApp(${name}).mcp("${serverName}") 的 envRef 每项必须是环境变量名，收到 ${JSON.stringify(ref)}`)
+        }
+      }
+      for (const [header, ref] of Object.entries(mcpOpts.headerRefs ?? {})) {
+        if (typeof ref !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(ref)) {
+          throw new Error(`defineApp(${name}).mcp("${serverName}") 的 headerRefs.${header} 必须是环境变量名，收到 ${JSON.stringify(ref)}`)
+        }
+      }
+      spec.mcps!.push({
+        serverName,
+        transport: mcpOpts.transport,
+        ...(mcpOpts.command === undefined ? {} : { command: mcpOpts.command }),
+        ...(mcpOpts.args === undefined ? {} : { args: [...mcpOpts.args] }),
+        ...(mcpOpts.env === undefined ? {} : { env: { ...mcpOpts.env } }),
+        ...(mcpOpts.envRef === undefined ? {} : { envRef: [...mcpOpts.envRef] }),
+        ...(mcpOpts.cwd === undefined ? {} : { cwd: mcpOpts.cwd }),
+        ...(mcpOpts.url === undefined ? {} : { url: mcpOpts.url }),
+        ...(mcpOpts.headers === undefined ? {} : { headers: { ...mcpOpts.headers } }),
+        ...(mcpOpts.headerRefs === undefined ? {} : { headerRefs: { ...mcpOpts.headerRefs } }),
+        ...(mcpOpts.toolCallTimeoutMs === undefined ? {} : { toolCallTimeoutMs: mcpOpts.toolCallTimeoutMs }),
+        ...(mcpOpts.failOnStartupError === undefined ? {} : { failOnStartupError: mcpOpts.failOnStartupError }),
+      })
       return app
     },
 
