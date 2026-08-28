@@ -167,6 +167,7 @@ export default app   // `loom dev` 启动：组合为 harness profile + bundle p
 |---|---|---|
 | `defineApp` | 生成一个 bundle（`dsh.bundle.patch` 声明，`docs/user/develop/basic/publish.md:36-43`）叠在 `dsh-base` 之上；`loom dev` = `dsh web --patch <生成的 overlay>` | ✅（gis-bridge 以手工 overlay 验证同路径） |
 | `persistence` | `session-persistence-jsonl` / `sqlite` 两个既有 provider | ✅ |
+| `provider` / `providers`（M11） | 一行切换模型提供方：缺省 `deepseek-official`（dsh-llm-deepseek 现状），`ollama`/`openrouter`/`openai-compatible` 组合为 `dsh-llm-pi-ai` 多路由（route 键即 provider 名，机密只经 apiKeyEnv 引用；非 catalog 路由 models 目录自动含默认与 agent 覆盖模型）——见 docs/providers.zh.md | ✅ |
 
 ### 5.2 工具：一份声明，三张面孔
 

@@ -10,6 +10,7 @@
 import { join } from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
+import type { ResolvedLlm } from './providers.js'
 
 /**
  * 解析 workspace 插件包的入口 file:/// URL（B2 生产侧：python-tools /
@@ -34,6 +35,11 @@ export interface ComposeOptions {
   apiPrefix: string
   /** 声明了 app.policy 时为 true：组合加入 user-approval 审批缝。 */
   withApproval?: boolean
+  /**
+   * M11：模型提供方解析结果（resolveLlm(app.spec)；缺省/官方 = dsh-llm-deepseek
+   * 现状组合，其余 = dsh-llm-pi-ai 多路由段）。缺省 deepseek-official 向后兼容。
+   */
+  llm?: ResolvedLlm
   /** 声明了任一 app.subagent 时为 true：组合加入 subagent 服务缝 + spawn provider。 */
   withSubagent?: boolean
   /** 声明了 app.python 时为 true：组合加入 python-bridge 行（config 原样透传）。 */
@@ -70,6 +76,42 @@ function y(s: string): string {
  */
 export function composeCordisYml(opts: ComposeOptions): string {
   const sessionsDir = toPosix(join(opts.outDir, 'sessions'))
+  // M11：LLM 组合段——官方走 dsh-llm-deepseek（零配置现状），其余走 dsh-llm-pi-ai
+  // 多路由（route 键 = agent-default-model 的 provider 名；机密只经 apiKeyEnv 引用）。
+  const llm = opts.llm ?? { kind: 'deepseek-official' } as const
+  const llmBlock = llm.kind === 'deepseek-official'
+    ? `
+# 凭据行镜像 examples/jsonrpc-agent/minimal.cordis.yml 的 apiKeyEnv 做法；
+# key 从环境变量 DEEPSEEK_API_KEY 每请求解析（CLI 已加载 entry 同目录 .env）。
+- id: llm-deepseek
+  name: '@deepseek-ai/dsh-llm-deepseek'
+  config:
+    apiKeyEnv: DEEPSEEK_API_KEY
+`
+    : `\n# M11 模型网关：dsh-llm-pi-ai 多提供方路由（app.provider = "${llm.active}"）。
+# 路由键即 provider 名；机密只经 apiKeyEnv 引用（每请求解析），不进本文件。
+- id: llm-pi-ai
+  name: '@deepseek-ai/dsh-llm-pi-ai'
+  config:
+    providers:
+${llm.routes.map(route => [
+  `      ${route.route}:`,
+  `        api: ${route.api}`,
+  ...(route.baseURL === undefined ? [] : [`        baseURL: ${y(route.baseURL)}`]),
+  ...(route.apiKeyEnv === undefined ? [] : [`        apiKeyEnv: ${route.apiKeyEnv}`]),
+  ...(route.headers === undefined ? [] : [
+    '        headers:',
+    ...Object.entries(route.headers).map(([name, value]) => `          ${y(name)}: ${y(value)}`),
+  ]),
+  '        models:',
+  ...route.models.map(model => `          - id: ${y(model)}`),
+].join('\n')).join('\n')}
+`
+  const agentDefaultModelBlock = llm.kind === 'deepseek-official'
+    ? `    provider: deepseek-official
+    model: deepseek-v4-flash`
+    : `    provider: ${llm.active}
+    model: ${y(llm.model)}`
   const approvalBlock = opts.withApproval === true
     ? `
 
@@ -154,14 +196,7 @@ export function composeCordisYml(opts: ComposeOptions): string {
 
 - id: llm
   name: '@deepseek-ai/dsh-llm'
-
-# 凭据行镜像 examples/jsonrpc-agent/minimal.cordis.yml 的 apiKeyEnv 做法；
-# key 从环境变量 DEEPSEEK_API_KEY 每请求解析（CLI 已加载 entry 同目录 .env）。
-- id: llm-deepseek
-  name: '@deepseek-ai/dsh-llm-deepseek'
-  config:
-    apiKeyEnv: DEEPSEEK_API_KEY
-
+${llmBlock}
 - id: session
   name: '@deepseek-ai/dsh-session'
 
@@ -195,12 +230,12 @@ ${approvalBlock}${subagentBlock}${pythonBlock}
 - id: agent
   name: '@deepseek-ai/dsh-agent'
 
-# 镜像 dsh-base（packages/bundle/base/cordis.patch.yml 63-67 行）。
+# 镜像 dsh-base（packages/bundle/base/cordis.patch.yml 63-67 行）；
+# M11 起 provider/model 由 resolveLlm(app.spec) 决定（官方缺省 / pi-ai 路由键）。
 - id: agent-default-model
   name: '@deepseek-ai/dsh-agent-default-model'
   config:
-    provider: deepseek-official
-    model: deepseek-v4-flash
+${agentDefaultModelBlock}
 
 - id: agent-loop
   name: '@deepseek-ai/dsh-agent-loop'

@@ -260,6 +260,22 @@ export interface AppSpec {
   auth?: AppAuthSpec
   /** loom memory（M7 生效；agent 级再按 agent.memory 开关）。 */
   memory?: AppMemorySpec
+  /** 模型提供方预设名（M11 生效；缺省 'deepseek-official' 零配置）。 */
+  provider?: string
+  /** 提供方路由覆盖/自定义路由（M11 生效；键 = 路由名，配合 provider 使用）。 */
+  providers?: Record<string, LlmProviderOptions>
+}
+
+/** 单个模型提供方路由的声明（M11）。 */
+export interface LlmProviderOptions {
+  /** 端点（openai-compatible / 自定义路由必填；预设路由可覆盖）。 */
+  baseURL?: string
+  /** 凭据引用（环境变量名，每请求解析；本地 Ollama 等免认证路由可省）。 */
+  apiKeyEnv?: string
+  /** 线协议（预设路由已带；自定义路由缺省 'openai-completions'）。 */
+  api?: 'openai-completions' | 'openai-responses' | 'anthropic-messages'
+  /** 额外模型 id 目录（应用的默认 model 自动包含）。 */
+  models?: string[]
 }
 
 /** defineApp 的可选参数。 */
@@ -270,6 +286,13 @@ export interface DefineAppOptions {
   port?: number
   /** API 前缀。默认 '/~loom'。 */
   apiPrefix?: string
+  /**
+   * 模型提供方预设（M11）：'deepseek-official'（缺省，零配置）/'ollama'（内网本地）
+   * /'openrouter'（云端聚合）/'openai-compatible'（vLLM 等自建，需 providers 里给 baseURL）。
+   */
+  provider?: string
+  /** 提供方路由覆盖/自定义路由（键 = 路由名；见 LlmProviderOptions）。 */
+  providers?: Record<string, LlmProviderOptions>
 }
 
 /** defineApp 返回的应用对象：既是声明收集器，也是默认导出物。 */

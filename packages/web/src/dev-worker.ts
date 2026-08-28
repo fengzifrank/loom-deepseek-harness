@@ -17,6 +17,7 @@ import { pathToFileURL } from 'node:url'
 import { boot, installFailLoud } from '@deepseek-ai/dsh-app-boot'
 import type { App } from './types.js'
 import { composeCordisYml } from './compose.js'
+import { resolveLlm } from './providers.js'
 
 const NAME = 'loom'
 
@@ -86,6 +87,9 @@ export async function bootApp(entryPath: string, opts: { production?: boolean } 
     withPython: app.spec.python !== undefined,
     ...(app.spec.python === undefined ? {} : { pythonConfig: app.spec.python }),
     ...(distDir === undefined ? {} : { distDir }),
+    // M11：官方缺省走 dsh-llm-deepseek（向后兼容）；声明 provider 时解析为 pi-ai 路由
+    //（声明期诚实失败：未知预设/缺 baseURL 直接 boot 前抛错）。
+    llm: resolveLlm(app.spec),
   })
   const configPath = resolve(loomDir, 'cordis.yml')
   writeFileSync(configPath, yml, 'utf8')

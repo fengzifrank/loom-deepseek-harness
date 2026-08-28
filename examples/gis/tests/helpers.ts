@@ -79,8 +79,15 @@ export interface BootOptions {
 
 /** boot 一个 Loom 应用（与 `loom dev` 相同的 compose + boot 路径）。 */
 export async function bootLoom(opts: BootOptions): Promise<BootedLoom> {
-  const { composeCordisYml } = await import('@loom-sdk/web')
+  const { composeCordisYml, resolveLlm } = await import('@loom-sdk/web')
   const { boot } = await import('@deepseek-ai/dsh-app-boot')
+  // M11：与 dev-worker 同路径——导入应用声明解析提供方路由（官方缺省向后兼容）。
+  ensureTsx()
+  const appModule = (await import(pathToFileURL(opts.appModulePath).href)) as { default?: { spec?: unknown } }
+  const appSpec = appModule.default?.spec as
+    | { model: string; provider?: string; providers?: Record<string, unknown>; agents?: Array<{ model?: string }> }
+    | undefined
+  if (appSpec === undefined) throw new Error(`bootLoom: ${opts.appModulePath} 缺少 defineApp default 导出`)
   const outDir = resolve(GIS_DIR, opts.outDirName)
   // 预清理（幂等）：Windows 上上一轮的 afterAll 清理可能因句柄延迟释放失败而
   // 留下残留——带着旧 sidecar 索引 boot 会改变行为（M7 起 keyed 会话会被
@@ -124,6 +131,7 @@ export async function bootLoom(opts: BootOptions): Promise<BootedLoom> {
     port: opts.port,
     apiPrefix: '/~loom',
     withApproval: opts.withApproval,
+    llm: resolveLlm(appSpec),
     ...(opts.withSubagent === undefined ? {} : { withSubagent: opts.withSubagent }),
     ...(opts.withPython === undefined ? {} : { withPython: opts.withPython }),
     ...(opts.pythonConfig === undefined ? {} : { pythonConfig: opts.pythonConfig }),

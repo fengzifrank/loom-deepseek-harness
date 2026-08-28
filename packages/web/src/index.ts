@@ -23,6 +23,7 @@ import type {
   AppPythonSpec,
   AppSpec,
   DefineAppOptions,
+  LlmProviderOptions,
   PolicySpec,
   ProjectionEvent,
   ProjectionSpec,
@@ -40,6 +41,8 @@ import type { LoomZSchema } from './schema.js'
 import { isSchemastery, schemasteryToOutputDsl, warnInputDslIssues, warnOutputDslIssues } from './schema.js'
 export { composeCordisYml } from './compose.js'
 export type { ComposeOptions } from './compose.js'
+export { PROVIDER_PRESETS, PROVIDER_PRESET_NAMES, resolveLlm } from './providers.js'
+export type { ResolvedLlm, ResolvedLlmRoute } from './providers.js'
 
 export type {
   AgentMemoryOptions,
@@ -52,6 +55,7 @@ export type {
   DefineAppOptions,
   InferToolArgs,
   InferToolOutput,
+  LlmProviderOptions,
   PolicySpec,
   ProjectionEvent,
   ProjectionSpec,
@@ -217,6 +221,8 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
     policy?: PolicySpec
     auth?: AppAuthSpec
     memory?: AppMemorySpec
+    provider?: string
+    providers?: Record<string, LlmProviderOptions>
   } = {
     name,
     model: opts.model ?? DEFAULT_MODEL,
@@ -227,6 +233,8 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
     projections: [],
     channels: [],
     subagents: [],
+    ...(opts.provider === undefined ? {} : { provider: opts.provider }),
+    ...(opts.providers === undefined ? {} : { providers: { ...opts.providers } }),
   }
 
   const app: App = {
