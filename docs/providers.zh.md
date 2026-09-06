@@ -76,9 +76,13 @@ const app = defineApp('tcm-platform', {
   `openai-responses` / `anthropic-messages`。
 - **声明期收口**：未知 provider 名、`openai-compatible` 缺 baseURL、自定义路由缺
   baseURL 或空模型目录、非法协议名——`loom dev` 启动前直接抛错（诚实失败优于请求期排查）。
-- **v1 应用级路由**：provider/model 全应用共用（`agent-default-model` 单选）；
-  按 agent 切换 provider 待内核 per-agent provider 支持后开放（`AgentSpec.model`
-  字符串覆盖现在就可用，但走同一路由）。
+- **per-agent 路由（0.1.2 起解锁）**：`app.agent(id, { provider: 'ollama', model: 'qwen3:8b' })`
+  可按 agent 指定路由——provider 必须指向已声明路由（声明期校验），该 agent 的模型
+  覆盖自动并入对应路由目录；未声明 provider 的 agent 沿用应用默认路由。e2e 证据：
+  `examples/gis/tests/gateway.e2e.test.ts`（双路由 mock，talker-b 的请求真实走 gw-b）。
+- **交付隐私注意（0.1.2 起）**：DeepSeek 官方适配器默认随请求上报已启用插件的包名与
+  版本（可配置关闭），另有可选的 session 日志增量上传（默认关）——客户私有化交付
+  请在配置里显式核对这两项；内网 Ollama/vLLM 走 pi-ai 路径不受影响。
 - **应用依赖**：使用非官方 provider 的应用需安装 `@deepseek-ai/dsh-llm-pi-ai`
   （组合按 npm 名解析，与其它 `dsh-*` 插件同机制）。
 

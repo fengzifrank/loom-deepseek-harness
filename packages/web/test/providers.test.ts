@@ -129,3 +129,44 @@ describe('PROVIDER_PRESETS', () => {
     expect(Object.keys(PROVIDER_PRESETS)).toHaveLength(4)
   })
 })
+
+describe('resolveLlm：per-agent provider（M11 stretch，0.1.2 解锁）', () => {
+  it('agent.provider 指向已声明路由 → 通过；模型目录自动覆盖该路由', () => {
+    const resolved = resolveLlm({
+      model: 'm1', provider: 'gw-a',
+      providers: {
+        'gw-a': { baseURL: 'http://a/v1' },
+        'gw-b': { baseURL: 'http://b/v1', models: [] },
+      },
+      agents: [{ id: 'auditor', provider: 'gw-b', model: 'm2' }],
+    })
+    expect(resolved.kind === 'pi-ai' ? resolved.routes.map(r => r.route) : []).toEqual(['gw-a', 'gw-b'])
+    const routeB = resolved.kind === 'pi-ai' ? resolved.routes[1] : undefined
+    expect(routeB?.models).toContain('m2')
+  })
+
+  it('agent.provider 指向未声明路由 → 声明期拒绝（pi-ai 分支）', () => {
+    expect(() => resolveLlm({
+      model: 'm1', provider: 'gw-a',
+      providers: { 'gw-a': { baseURL: 'http://a/v1' } },
+      agents: [{ id: 'x', provider: 'no-such-route' }],
+    })).toThrow(/no-such-route[\s\S]*路由未声明/)
+  })
+
+  it('非活跃路由的 agent 模型自动并入目录（与活跃路由同语义）；官方组合下非官方 provider → 拒绝', () => {
+    const resolved = resolveLlm({
+      model: 'm1', provider: 'gw-a',
+      providers: {
+        'gw-a': { baseURL: 'http://a/v1' },
+        'gw-b': { baseURL: 'http://b/v1', models: [] },
+      },
+      agents: [{ id: 'x', provider: 'gw-b', model: 'auto-model' }],
+    })
+    const routeB = resolved.kind === 'pi-ai' ? resolved.routes[1] : undefined
+    expect(routeB?.models).toContain('auto-model')
+    expect(() => resolveLlm({
+      model: 'm1',
+      agents: [{ id: 'x', provider: 'ollama' }],
+    })).toThrow(/deepseek-official/)
+  })
+})

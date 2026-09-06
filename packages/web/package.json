@@ -31,13 +31,37 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-app-boot": "0.1.1-rc.1",
-    "@deepseek-ai/dsh-llm": "0.1.1-rc.1",
-    "@deepseek-ai/dsh-tools": "0.1.1-rc.1",
-    "@deepseek-ai/schemastery": "3.18.1",
+    "@deepseek-ai/dsh-app-boot": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-llm": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-tools": "0.1.2-rc.1",
+    "@deepseek-ai/schemastery": "3.18.2",
     "dsh-python-tools": "workspace:*",
     "dsh-web-approval-answerer": "workspace:*",
-    "tsx": "4.23.12"
+    "tsx": "4.23.12",
+    "@deepseek-ai/cordis-plugin-timer": "1.1.4",
+    "@deepseek-ai/dsh-brand": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-util-values": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-typert-protocol": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-session-projection": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-client-connection": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-anonymous-user-id": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-atomic-write": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-attachment": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-credentials": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-deepseek-llm-api-extensions": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-fs": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-timeout": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-authorization": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-subprocess": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-session-query": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-agent-presets": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-jobs": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-sandbox": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-sandbox-policy": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-session-projection-cache": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-util-time": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-subagent-in-process-driver": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-code-runtime": "0.1.2-rc.1"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
@@ -49,7 +73,7 @@
     }
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "4.0.1",
+    "@deepseek-ai/cordis": "4.0.2",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
     "typescript": "5.9.3"

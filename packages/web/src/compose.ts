@@ -293,6 +293,10 @@ ${llmBlock}
 - id: tool-session-query
   name: '@deepseek-ai/dsh-tool-session-query'
 
+# 会话投影缓存缝（0.1.2 起 dsh-agent / dsh-tool-session-query 的强制 peer 服务）。
+- id: session-projection
+  name: '@deepseek-ai/dsh-session-projection'
+
 - id: system-prompt
   name: '@deepseek-ai/dsh-system-prompt'
   config:

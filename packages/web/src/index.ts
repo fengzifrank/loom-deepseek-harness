@@ -315,7 +315,7 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
       return builder
     },
 
-    agent(id: string, agentOpts: { persona: string; tools?: string[]; model?: string; memory?: boolean | AgentMemoryOptions }) {
+    agent(id: string, agentOpts: { persona: string; tools?: string[]; model?: string; provider?: string; memory?: boolean | AgentMemoryOptions }) {
       if (spec.agents.some(agent => agent.id === id)) {
         throw new Error(`defineApp(${name}): 重复的智能体 id "${id}"`)
       }
@@ -353,6 +353,7 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
         persona: agentOpts.persona,
         ...(agentOpts.tools === undefined ? {} : { tools: [...agentOpts.tools] }),
         ...(agentOpts.model === undefined ? {} : { model: agentOpts.model }),
+        ...(agentOpts.provider === undefined ? {} : { provider: agentOpts.provider }),
         ...(agentOpts.memory === undefined ? {} : { memory: typeof agentOpts.memory === 'boolean' ? agentOpts.memory : { ...agentOpts.memory } }),
       })
       return app

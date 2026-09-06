@@ -83,6 +83,24 @@ describe.skipIf(!sdkBuilt())('模型网关 e2e（mock OpenAI 兼容端点）', (
     expect(body.model).toBe('mock-model')
   })
 
+  it('per-agent 路由（0.1.2 解锁）：talker-b 走 gw-b 路由的 mock-model-2', async () => {
+    const created = await fetch(`${loom!.base}/agents/talker-b/sessions`, { method: 'POST', headers: ANON_HEADERS })
+    expect(created.status).toBe(200)
+    const { sessionId } = (await created.json()) as { sessionId: string }
+    const sse = await openEventStream(loom!.base, sessionId)
+    try {
+      const sent = await fetch(`${loom!.base}/agents/talker-b/sessions/${sessionId}/messages`, {
+        method: 'POST', headers: { 'content-type': 'application/json', ...ANON_HEADERS }, body: JSON.stringify({ text: '你好' }),
+      })
+      expect(sent.status).toBe(200)
+      await sse.wait(e => e.type === 'assistant/message', 30_000, 'assistant/message')
+      const hit = captured.find(req => req.path.includes('/chat/completions') && req.body.model === 'mock-model-2')
+      expect(hit).toBeDefined()
+    } finally {
+      sse.close()
+    }
+  })
+
   it('一轮对话经 mock 网关返回文本，且 mock 收到 chat/completions（model=mock-model）', async () => {
     const created = await fetch(`${loom!.base}/agents/talker/sessions`, { method: 'POST', headers: ANON_HEADERS })
     expect(created.status).toBe(200)
@@ -95,9 +113,9 @@ describe.skipIf(!sdkBuilt())('模型网关 e2e（mock OpenAI 兼容端点）', (
       expect(sent.status).toBe(200)
       const message = await sse.wait(e => e.type === 'assistant/message', 30_000, 'assistant/message')
       expect(String(message.text)).toContain('网关 mock 模型')
-      const hit = captured.find(req => req.path.includes('/chat/completions'))
+      // 双路由后捕获数组混有 gw-b 流量——按模型 id 过滤本路由的请求。
+      const hit = captured.find(req => req.path.includes('/chat/completions') && req.body.model === 'mock-model')
       expect(hit).toBeDefined()
-      expect(hit!.body.model).toBe('mock-model')
     } finally {
       sse.close()
     }

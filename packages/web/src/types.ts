@@ -164,8 +164,14 @@ export interface AgentSpec {
   readonly persona: string
   /** 该 agent 可见的工具名列表；缺省 = 应用全部工具（v1 经 agent 作用域注册实现）。 */
   readonly tools?: string[]
-  /** 覆盖应用默认模型（provider 固定取部署级默认路由）。 */
+  /** 覆盖应用默认模型 id（provider 沿用部署级默认路由）。 */
   readonly model?: string
+  /**
+   * 覆盖部署级默认路由（0.1.2 起 AgentOptions 原生支持；M11 stretch 解锁）：
+   * 必须是 providers 里声明的路由名（或缺省 deepseek-official）。与 model 组合
+   * 实现 per-agent 模型路由——如植保专家走本地 Ollama、审计员走云端。
+   */
+  readonly provider?: string
   /** loom memory 总开关（需 app.memory 声明；默认 false——提取花 token）。 */
   readonly memory?: boolean | AgentMemoryOptions
 }
@@ -350,7 +356,7 @@ export interface App {
   /** 声明一个工具，返回链式 builder。 */
   tool(name: string): ToolBuilder
   /** 声明一个智能体（自动获得 /agents/:id/sessions 路由）。 */
-  agent(id: string, opts: { persona: string; tools?: string[]; model?: string; memory?: boolean | AgentMemoryOptions }): App
+  agent(id: string, opts: { persona: string; tools?: string[]; model?: string; provider?: string; memory?: boolean | AgentMemoryOptions }): App
   /** 声明一个投影（会话事件 → 应用状态）。 */
   projection<S>(name: string, def: { init: S; apply: (state: S, event: ProjectionEvent) => S }): App
   /**

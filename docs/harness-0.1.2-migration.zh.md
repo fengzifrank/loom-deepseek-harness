@@ -1,8 +1,11 @@
 # Harness 0.1.2 迁移调研笔记（2026-09-06，未完成迁移）
 
+> **状态：已完成迁移（2026-09-06）**——Loom 已在 0.1.2-rc.1 + cordis 4.0.2 上全量
+> 391+ 测试绿。本文保留全程踩坑记录；0.1.3-alpha.1 的 SessionHandle 破坏性变更
+> 仍未追（alpha + 官方自认性能回退）。
+>
 > 官方已发布 0.1.2-rc.1（npm `next`，2026-09-03）与 0.1.3-alpha.1（GitHub 预发布，
-> 2026-09-04）。本文记录升级尝试的全部发现——**结论：0.1.2 是一次真正的迁移工程，
-> 不是钉版本**；Loom 暂留 0.1.1-rc.1（全量 391 测试绿），下轮专攻。
+> 2026-09-04）。
 
 ## 官方版本态势
 
@@ -42,7 +45,7 @@
    （`z<Config>` 泛型标注，见 dsh-tools 0.1.2 的 d.ts）。已验证可编译。
    注意 3.18.1（当前）的默认导出类型形态不同（`Schemastery.Static`），标注要双向验证。
 
-## 未解决的核心阻塞（下轮主攻）
+## 已解的核心阻塞（迁移实战记录）
 
 - **启动机制变更**："应用统一通过 dsh Profile 启动"——app-boot 0.1.2 改用
   `cordis-plugin-include` + loader 加载我们的 cordis.yml 条目，出现
@@ -53,7 +56,14 @@
 - 连锁症状：boot 中止时并行 apply 里的 `c.on(...)` 报
   `cannot create effect on inactive context`（cordis 4.0.2 Fiber.assertActive）——
   是级联不是根因。
-- 修复后全量回归仍是 20 文件失败 → 该链路修通前不升级。
+- **实锤与修复**：深读官方 0.1.2 源码后确认是**混合安装**——残留的 dsh-session@0.1.1
+  从 dsh-llm@0.1.2 导入已被移到 dsh-util-values 的 `assertNever`。修复 = 连 pnpm-lock
+  一起全清重装（183 个 dsh 包全部 0.1.2，零残留），boot 即通。
+- Session API 适配：`Session.events` 移除 → `snapshotEvents()`；Loom 在 projection.ts
+  加 `sessionEventsOf()` 单一收口（双版本兼容），7 处调用点改走收口。
+- 组合新增一行 `session-projection`（dsh-agent 0.1.2 强制 peer 服务）。
+- **收益已兑现**：0.1.2 AgentOptions 原生支持 per-agent provider/model——
+  `app.agent(id, { provider })` 已接线并有双路由 mock e2e 实证。
 
 ## 下轮迁移清单（建议顺序）
 

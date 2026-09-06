@@ -52,7 +52,7 @@ export function resolveLlm(spec: {
   model: string
   provider?: string
   providers?: Record<string, LlmProviderOptions>
-  agents?: ReadonlyArray<{ model?: string }>
+  agents?: ReadonlyArray<{ id?: string; model?: string; provider?: string }>
 }): ResolvedLlm {
   const providerName = spec.provider ?? 'deepseek-official'
   const declared = spec.providers ?? {}
@@ -67,15 +67,36 @@ export function resolveLlm(spec: {
     if (Object.keys(declared).length > 0) {
       throw new Error('defineApp: provider "deepseek-official" 不消费 providers 覆盖（它是 dsh-llm-deepseek 现状组合；请换 openai-compatible + providers.{route}.baseURL）')
     }
+    // per-agent provider（M11 stretch，0.1.2 解锁）：官方组合下只有 deepseek-official 一条路由。
+    const badAgent = (spec.agents ?? []).find(agent => agent.provider !== undefined && agent.provider !== 'deepseek-official')
+    if (badAgent !== undefined) {
+      throw new Error(`defineApp: 智能体 "${badAgent.id ?? ''}" 声明 provider "${badAgent.provider}"，但应用未声明 providers 路由（官方组合只有 deepseek-official）`)
+    }
     return { kind: 'deepseek-official' }
+  }
+
+  // per-agent provider 校验（pi-ai 多路由）：agent.provider 必须指向已声明的路由
+  //（活跃预设路由或 providers 键），否则请求期才炸——声明期收口。
+  const routeNames = new Set([providerName, ...Object.keys(declared)])
+  const unknownAgent = (spec.agents ?? []).find(agent => agent.provider !== undefined && !routeNames.has(agent.provider))
+  if (unknownAgent !== undefined) {
+    throw new Error(`defineApp: 智能体 "${unknownAgent.id ?? ''}" 声明 provider "${unknownAgent.provider}"，但路由未声明（可用：${[...routeNames].join(' / ')}）`)
+  }
+  // 非活跃路由的 agent 模型覆盖自动并入该路由目录（与活跃路由同语义——
+  // pi-ai 无 catalog 路由缺 id 即请求期失败，声明期收口为自动补齐）。
+  const extraModelsByRoute = new Map<string, Set<string>>()
+  for (const agent of spec.agents ?? []) {
+    if (agent.provider === undefined || agent.model === undefined) continue
+    const set = extraModelsByRoute.get(agent.provider) ?? new Set<string>()
+    set.add(agent.model)
+    extraModelsByRoute.set(agent.provider, set)
   }
 
   // 活跃路由必须覆盖的模型目录：应用默认 model + 各 agent 的 model 覆盖。
   const requiredModels = [spec.model, ...(spec.agents ?? []).map(agent => agent.model).filter((m): m is string => m !== undefined)]
 
   // 路由集合 = 活跃预设路由 + 用户声明的全部路由（多路由一并物化，v1 全应用共用活跃路由）。
-  const routeNames = [...new Set([providerName, ...Object.keys(declared)])]
-  const routes: ResolvedLlmRoute[] = routeNames.map(route => {
+  const routes: ResolvedLlmRoute[] = [...routeNames].map(route => {
     const isPreset = route === providerName && PROVIDER_PRESETS[route] !== undefined
     const base: LlmProviderOptions = isPreset ? PROVIDER_PRESETS[route]! : {}
     const override = declared[route] ?? {}
@@ -94,10 +115,13 @@ export function resolveLlm(spec: {
     // pi-ai 的 OpenAI 兼容协议强制要求 key 或 Authorization 头其一（本地 Ollama 等
     // 免认证端点也过不去）——无凭据路由发匿名占位头，端点忽略即可。
     const headers = apiKeyEnv === undefined ? { Authorization: 'Bearer loom-anonymous' } : undefined
-    // models 目录：活跃路由必须含全部被引用的 model；自定义路由无 catalog，
-    // 缺目录则不可服务。
+    // models 目录：活跃路由含应用默认 model + 全部 agent 的 model 覆盖；非活跃
+    // 路由含该路由上被 agent 引用的 model 覆盖（自动并入，同语义）。
     const extra = override.models ?? base.models ?? []
-    const models = route === providerName ? [...new Set([...requiredModels, ...extra])] : [...new Set(extra)]
+    const agentModels = [...(extraModelsByRoute.get(route) ?? [])]
+    const models = route === providerName
+      ? [...new Set([...requiredModels, ...agentModels, ...extra])]
+      : [...new Set([...agentModels, ...extra])]
     if (models.length === 0) {
       throw new Error(`defineApp: providers.${route} 缺 models 目录（自定义路由无内置 catalog，至少列一个模型 id）`)
     }

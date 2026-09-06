@@ -115,10 +115,24 @@ export function projectEvent(event: SessionEventLike, callIndex: CallIndex, card
   }
 }
 
+/** 会话事件视图（loose）：0.1.2 起 Session 移除 `.events` 改 `snapshotEvents()`；
+ * 0.1.1 形（iterable getter）保留回退——双版本兼容的单一收口。 */
+export interface SessionEventsView {
+  readonly events?: Iterable<SessionEventLike>
+  snapshotEvents?(fromSeq?: number, toSeqExclusive?: number): readonly SessionEventLike[]
+}
+
+/** 取会话全量事件（快照副本，遍历安全）。 */
+export function sessionEventsOf(session: SessionEventsView): readonly SessionEventLike[] {
+  if (typeof session.snapshotEvents === 'function') return session.snapshotEvents()
+  const legacy = session.events
+  return Array.isArray(legacy) ? legacy : [...(legacy ?? [])]
+}
+
 /** 扫描历史事件重建 callId→{seq,name} 索引（fork 子会话回放需要）。 */
-export function rebuildCallIndex(session: { events: Iterable<SessionEventLike> }): CallIndex {
+export function rebuildCallIndex(session: SessionEventsView): CallIndex {
   const index: CallIndex = new Map()
-  for (const event of session.events) {
+  for (const event of sessionEventsOf(session)) {
     if (event.type === 'tool/call' && event.data?.callId !== undefined) {
       index.set(String(event.data.callId), { seq: event.seq, name: String(event.data.name) })
     }

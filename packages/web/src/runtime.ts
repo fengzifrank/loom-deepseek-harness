@@ -85,7 +85,7 @@ import {
   parseDecisions,
   parseExtraction,
 } from './memory.js'
-import { projectEvent, rebuildCallIndex, textOfBlocks, truncate, type CardIndex, type SessionEventLike } from './projection.js'
+import { projectEvent, rebuildCallIndex, sessionEventsOf, textOfBlocks, truncate, type CardIndex, type SessionEventLike, type SessionEventsView } from './projection.js'
 
 /** Cordis 插件名。 */
 export const name = 'loom-runtime'
@@ -93,8 +93,9 @@ export const name = 'loom-runtime'
 /** 挂载前提：工具注册表、智能体注册表、会话存储、web 路由、默认模型选择。 */
 export const inject = ['tools', 'agents', 'sessions', 'webServer', 'agentDefaultModel']
 
-/** 插件配置 schema。 */
-export const Config = z.object({
+/** 插件配置 schema。（显式 z<RuntimeConfig> 标注——官方 0.1.2 插件同款模式；
+ * schemastery 3.18.2 经 peer 优化解析后裸推断类型不再可移植，TS2742。） */
+export const Config: z<RuntimeConfig> = z.object({
   appModule: z.string().required(),
   apiPrefix: z.string().default('/~loom'),
   outDir: z.string(),
@@ -112,9 +113,8 @@ export interface RuntimeConfig {
 // 最小结构类型（避免为类型引入运行时无关依赖；服务形状见各内核包）
 // ---------------------------------------------------------------------------
 
-interface SessionLike {
+interface SessionLike extends SessionEventsView {
   readonly id: string
-  readonly events: Iterable<SessionEventLike>
 }
 
 interface AgentLike {
@@ -895,7 +895,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
     let assistantText = ''
     let turn = 0
     const toolCalls: ToolCallShape[] = []
-    for (const event of entry.session.events) {
+    for (const event of sessionEventsOf(entry.session)) {
       if (event.seq > toSeq) break
       if (event.type === 'turn/end') turn++
       if (event.seq <= sinceSeq) continue
@@ -923,7 +923,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
 
   /** 会话首条用户消息文本（M8 失败触发检索的 slim 任务目标查询）。 */
   function firstUserText(entry: OwnedSession): string {
-    for (const event of entry.session.events) {
+    for (const event of sessionEventsOf(entry.session)) {
       if (event.type === 'user/message' && event.data?.source?.kind === 'user') {
         const text = textOfBlocks(event.data.content).trim()
         if (text !== '') return text.slice(0, MEMORY_TURN_TEXT_MAX)
@@ -1463,7 +1463,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
           // 注入（source form:'recall'，防注入框），下个 pre-step 进入模型上下文。
           if (memoryStore !== undefined && recallOn && memoryEnabled(entry.agentId)) {
             let isFirstUserMessage = true
-            for (const event of entry.session.events) {
+            for (const event of sessionEventsOf(entry.session)) {
               if (event.type === 'user/message' && event.data?.source?.kind === 'user') {
                 isFirstUserMessage = false
                 break
@@ -1510,7 +1510,13 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
   /** agent 的 provider/model（resume 与 create 共用同一选择逻辑）。 */
   function agentOptionsFor(agentId: string): { provider: string; model: string } {
     const selection = c.agentDefaultModel.currentSelection()
-    return { provider: selection.provider, model: agentsById.get(agentId)!.model ?? app.spec.model }
+    // 0.1.2 起 AgentOptions 支持 per-agent provider（M11 stretch 解锁）：
+    // agent 声明的 provider 覆盖全局路由，缺省沿用 agent-default-model。
+    const agentSpec = agentsById.get(agentId)!
+    return {
+      provider: agentSpec.provider ?? selection.provider,
+      model: agentSpec.model ?? app.spec.model,
+    }
   }
 
   /** agent 的 setup 钩子（persona section + 作用域工具注册；resume 与 create 共用）。 */
@@ -1750,7 +1756,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
             }
             throw error
           }
-          const forkedAt = atSeq ?? [...entry.session.events].at(-1)?.seq ?? 0
+          const forkedAt = atSeq ?? sessionEventsOf(entry.session).at(-1)?.seq ?? 0
           ownedSessions.set(childId, { session: child, agentId: entry.agentId, callIndex: rebuildCallIndex(child), forked: true })
           // M7：fork 子会话登记 sidecar（同属主；kind 'fork' → 重启后只读回放恢复）。
           if (indexRecord !== undefined) {
@@ -2057,7 +2063,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
 
     // 有界区间（回放调试）：补放后即收尾，不挂实时订阅。
     if (to !== null) {
-      for (const event of entry.session.events) {
+      for (const event of sessionEventsOf(entry.session)) {
         if (event.seq <= since) continue
         if (event.seq > to) break
         const payload = projectEvent(event, entry.callIndex, cards)
@@ -2079,7 +2085,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
     }
     set.add(bufferingSink)
 
-    for (const event of entry.session.events) {
+    for (const event of sessionEventsOf(entry.session)) {
       if (event.seq <= since) continue
       const payload = projectEvent(event, entry.callIndex, cards)
       if (payload !== undefined) emit(payload)
