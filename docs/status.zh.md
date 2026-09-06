@@ -1,6 +1,6 @@
 # Loom 状态与路线图（status.zh.md）
 
-> 状态总览与里程碑详情。当前一句话：**M1-M12 全量交付，测试全绿，已开源。**
+> 状态总览与里程碑详情。当前一句话：**M1-M13 全量交付，测试全绿，已开源。**
 
 ## 状态总览
 
@@ -32,6 +32,7 @@
 | **技能文件**：`app.skills({ dirs? })` 一行声明（缺省 `skills/`，相对 loom.app.ts）——`<name>/SKILL.md` / 平铺 `<name>.md`（frontmatter 必填 kebab-case name + description）成为模型可加载技能：会话首请求前收到目录摘要（digest 热刷新），按需调 `skill` 工具加载全文（每次加载重读，改正文即时生效）；组合接线内核三插件 dsh-skill / dsh-skill-filesystem / dsh-tool-skill，**隔离模式**（includeDefaultRoots: false，只扫应用声明目录——部署态自包含）；声明期校验（空目录数组/空字符串拒绝）——见 [docs/skills.zh.md](docs/skills.zh.md)；e2e `examples/gis/tests/skills.e2e.test.ts`（无 key 组合段 + 带 key：模型加载 greeting-guide 并按规范回答"施主…祝君安康"） | M12 | ✅ |
 | **评估三级判定**：`loom eval` 从二元 pass/fail 升级为 `pass / pass-with-caveats / fail`（oci-agent fully_satisfactory/satisfactory_with_caveats/not_satisfactory 移植）——断言上下文新增 `ev.caveat('…')` 非阻断告警（blocker/warner 二分：断言抛错即 fail 且阻断优先，即使先记了告警；空告警消息 fail-closed）；CLI ✓/⚠/✗ 三态输出 + 汇总含保留计数（只有 fail 退出码 1）；`ok` 字段保持兼容（= verdict !== 'fail'），既有 evals 零改动 | M12 | ✅ |
 | **演员-评论家模式**：oci-agent actor-critic 循环的 Loom 表达——critic 子智能体（`tools: []` 纯推理、只输出三级 satisfaction JSON）+ worker persona 承载修订纪律（not_satisfactory 必须修订再复核、最多一次防拉扯、caveats 如实转述）+ 落笔走审批门（LLM 写判定，代码做门禁）；离线孪生即上面的三级 eval——见 [docs/critic-pattern.zh.md](docs/critic-pattern.zh.md) 与示例 `examples/critic-demo`（处方草拟 → 复核 → 修订 → 审批归档） | M12 | ✅ |
+| **Semantica 融合**：Loom（执行/策略/审批/预算）× semantica 0.6.8（知识图/判例/因果链/SHACL/溯源）——双路径接入：M6 桥（`examples/semantica-demo/py_tools.py`，7 个类型化 `agri_*` 工具，含 MCP 面没有的 SHACL/溯源；图单写者 graph.json，惰性初始化避开次线程 OpenMP 卡死）与 M10 MCP（`loom.mcp-app.ts` 零代码，15 个 `mcp__semantica__*`，独立 KG 文件）；决策入账挂审批门、判例检索阈值 0.05（中文词面相似度实测 ~0.18，默认 0.5 全灭）；`--selftest` 钉 API 名（README 与实际导出漂移的 fail-loud 保险）+ `semanticaReady()` 守卫（未装 venv 全自跳过）——见 [docs/semantica.zh.md](docs/semantica.zh.md)；e2e 三段：无 key（boot/pythonTools=7/组合行/协议直调命中种子判例+落盘）、带 key（判例→审批卡→allowed-once→decisionId→因果链四证据链）、MCP 变体（failOnStartupError 注册门） | M13 | ✅ |
 | ACP 通道接入等后续演进 | Next | ⏳ |
 
 
@@ -51,4 +52,5 @@
 | M11 | 模型网关（provider 一行切换 Ollama/OpenRouter/OpenAI 兼容；组合层接线 dsh-llm-pi-ai 多路由）——✅ 已交付 |
 | M10 | MCP 桥接（app.mcp 声明器 + dsh-mcp-client 接线；工具过同一策略/审批/预算管线）——✅ 已交付 |
 | M12 | 技能文件（app.skills + dsh-skill 三插件接线，SKILL.md 知识随应用走）+ 评估三级判定（pass/pass-with-caveats/fail，oci-agent 移植）+ 演员-评论家模式（critic 子智能体 + examples/critic-demo）——✅ 已交付 |
+| M13 | Semantica 融合（双路径：M6 桥类型化 agri_* 工具 + M10 MCP 零代码；知识图/判例/因果/SHACL/溯源接入 Loom 治理管线；examples/semantica-demo）——✅ 已交付 |
 

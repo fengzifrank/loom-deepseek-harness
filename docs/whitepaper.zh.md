@@ -226,6 +226,7 @@ app.agent('data-analyst', {
 | `fork` 路由 | `ctx.sessions.fork(source, boundary?)`，必须切在完整 turn 边界（`docs/architecture.md:126`） | 🔬 |
 | 每 agent 不同工具集 | `ctx.tools` 的 scoped 注册 + `tools.restrict`（`docs/subsystems/tools.md`） | 🔬 |
 | `app.skills()`（M12） | 技能文件：SKILL.md 目录 → 模型面 `skill` 工具 + 会话目录 digest 热刷新（dsh-skill / dsh-skill-filesystem / dsh-tool-skill 三插件，隔离模式只扫应用目录）——知识随应用走，改知识不改代码，见 docs/skills.zh.md | ✅ |
+| `app.python()` × semantica（M13） | 知识层融合：semantica 0.6.8（图记忆/判例/因果链/SHACL/溯源）经 loom-py 桥成为类型化 agri_* 工具（或 MCP 零代码接入）——决策入账走审批门，与 Loom 治理管线无缝组合，见 docs/semantica.zh.md | ✅ |
 
 **Preset 关系**：静态、预组合的 agent 形态用内核 preset 表达（目录 + `agent.cordis.yml`，空会话可 `recompose`，`packages/preset/agent-presets/README.md`）；Loom 的 `app.agent` 覆盖"应用内声明、HTTP 寻址"的动态形态。两者同源（都是 cordis 组合），不冲突。
 
