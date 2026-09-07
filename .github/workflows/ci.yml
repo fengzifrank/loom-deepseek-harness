@@ -61,11 +61,12 @@ jobs:
         run: pnpm --filter gis-example build
 
   e2e:
-    # 可选：配好 DEEPSEEK_API_KEY secret 后自动跑真实链路（不打印 key）——
-    # 审批允许/拒绝 + 委派链/webhook + 生成客户端直调真实端点
+    # 可选：配好 DEEPSEEK_API_KEY secret 后自动跑真实链路（不打印 key）。
+    # 注意：job 级 if 不能用 secrets 上下文（GitHub 只允许 github/needs/vars/inputs，
+    # 用了会让整个 workflow 创建不出任何 job——历史 16 连红的根因）。门槛放在
+    # 步骤内用 env 判空，secret 未配置时跳过。
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ secrets.DEEPSEEK_API_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -90,4 +91,9 @@ jobs:
       - name: Real-key e2e (approval / delegation+webhook / generated client / python bridge)
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: pnpm test:e2e
+        run: |
+          if [ -z "$DEEPSEEK_API_KEY" ]; then
+            echo "DEEPSEEK_API_KEY 未配置——真实链路 e2e 跳过（在 repo Settings → Secrets 配置后自动启用）"
+            exit 0
+          fi
+          pnpm test:e2e
