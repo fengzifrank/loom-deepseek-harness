@@ -30,6 +30,8 @@ if (process.env.DEEPSEEK_API_KEY === undefined && env.DEEPSEEK_API_KEY !== undef
 if (env.LEGACY_API_KEY !== undefined && process.env.LEGACY_API_KEY === undefined) {
   process.env.LEGACY_API_KEY = env.LEGACY_API_KEY
 }
+// 无 .env 环境（CI 只有 DEEPSEEK secret）回落老服务器演示 key——导入路径才能带认证。
+process.env.LEGACY_API_KEY ??= 'legacy-key-2018'
 
 interface ProductRow { id: string, name: string, stock: number }
 

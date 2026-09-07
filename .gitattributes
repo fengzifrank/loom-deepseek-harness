@@ -1,0 +1,12 @@
+# 行尾纪律：文本文件一律 LF（生成器输出 LF；Windows 克隆的 autocrlf=CRLF 会让逐字节快照误报）
+* text=auto eol=lf
+# 二进制不参与转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.pdf binary

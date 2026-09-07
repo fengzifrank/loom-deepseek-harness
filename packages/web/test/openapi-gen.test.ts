@@ -197,7 +197,8 @@ describe.skipIf(!sdkBuilt)('generateOpenapi：对 gis 应用的快照', () => {
   it('生成物与已提交的 examples/gis/openapi.json 逐字节一致（漂移 = 声明已变）', async () => {
     const app = (await import(join(GIS_DIR, 'loom.app.ts'))).default as ReturnType<typeof defineApp>
     const generated = openapiToJson(generateOpenapi(app))
-    const committed = readFileSync(join(GIS_DIR, 'openapi.json'), 'utf8')
+    // 行尾归一：Windows 克隆 autocrlf 会让工作副本变 CRLF——比较语义字节而非物理行尾。
+    const committed = readFileSync(join(GIS_DIR, 'openapi.json'), 'utf8').replace(/\r\n/g, '\n')
     expect(generated).toBe(committed)
   })
 

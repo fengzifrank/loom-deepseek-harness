@@ -20,7 +20,7 @@ describe.skipIf(!sdkBuilt)('generateClient：对 gis 应用生成的快照', () 
   it('生成物与已提交的 src/loom.client.ts 逐字节一致（漂移 = 声明已变，需重新生成）', async () => {
     const app = (await import(join(GIS_DIR, 'loom.app.ts'))).default as ReturnType<typeof defineApp>
     const generated = generateClient(app)
-    const committed = readFileSync(join(GIS_DIR, 'src', 'loom.client.ts'), 'utf8')
+    const committed = readFileSync(join(GIS_DIR, 'src', 'loom.client.ts'), 'utf8').replace(/\r\n/g, '\n')
     expect(generated).toBe(committed)
   })
 

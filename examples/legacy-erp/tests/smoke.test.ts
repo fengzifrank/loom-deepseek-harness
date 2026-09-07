@@ -24,7 +24,9 @@ describe.skipIf(!sdkBuilt())('老系统对接冒烟（无 key）', () => {
     ensureTsx() // 应用入口 loom.app.ts 是 TS
     const env = readEnv(APP_DIR)
     // 老系统 key（非 LLM key）：映射进应用（loom.app.ts 会转给 LOOM_IMPORT_TOKEN）。
+    // 无 .env 环境（CI / 全新克隆）回落到老服务器自带的演示 key——smoke 才能零配置跑。
     if (env.LEGACY_API_KEY !== undefined) process.env.LEGACY_API_KEY = env.LEGACY_API_KEY
+    process.env.LEGACY_API_KEY ??= 'legacy-key-2018'
     // 老系统走测试专属端口，避免撞上演示实例 4710。
     process.env.LEGACY_ERP_BASE = `http://127.0.0.1:${LEGACY_PORT}`
     stateBefore = readFileSync(STATE_PATH, 'utf8')
