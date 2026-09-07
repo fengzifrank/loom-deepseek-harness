@@ -13,11 +13,12 @@
 
 import type { LlmProviderOptions } from './types.js'
 
-/** 预设名 → 默认路由声明（ollama/openrouter 是 pi-ai 无 catalog 的手写路由）。 */
+/** 预设名 → 默认路由声明（ollama/openrouter/minimax 是 pi-ai 无 catalog 的手写路由）。 */
 export const PROVIDER_PRESETS: Readonly<Record<string, LlmProviderOptions>> = {
   'deepseek-official': {},
   ollama: { api: 'openai-completions', baseURL: 'http://127.0.0.1:11434/v1' },
   openrouter: { api: 'openai-completions', baseURL: 'https://openrouter.ai/api/v1', apiKeyEnv: 'OPENROUTER_API_KEY' },
+  minimax: { api: 'openai-completions', baseURL: 'https://api.minimaxi.com/v1', apiKeyEnv: 'MINIMAX_API_KEY' },
   'openai-compatible': { api: 'openai-completions' },
 }
 

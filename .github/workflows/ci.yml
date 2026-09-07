@@ -91,6 +91,9 @@ jobs:
       - name: Real-key e2e (approval / delegation+webhook / generated client / python bridge)
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+          HTTP_PROXY: ${{ vars.CI_HTTP_PROXY }}
+          HTTPS_PROXY: ${{ vars.CI_HTTP_PROXY }}
         run: |
           if [ -z "$DEEPSEEK_API_KEY" ]; then
             echo "DEEPSEEK_API_KEY 未配置——真实链路 e2e 跳过（在 repo Settings → Secrets 配置后自动启用）"

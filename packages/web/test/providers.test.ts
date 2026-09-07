@@ -125,8 +125,8 @@ describe('composeCordisYml：LLM 组合段', () => {
 
 describe('PROVIDER_PRESETS', () => {
   it('预设名单稳定（文档引用）', () => {
-    expect(PROVIDER_PRESET_NAMES).toEqual(['deepseek-official', 'ollama', 'openrouter', 'openai-compatible'])
-    expect(Object.keys(PROVIDER_PRESETS)).toHaveLength(4)
+    expect(PROVIDER_PRESET_NAMES).toEqual(['deepseek-official', 'ollama', 'openrouter', 'minimax', 'openai-compatible'])
+    expect(Object.keys(PROVIDER_PRESETS)).toHaveLength(5)
   })
 })
 
@@ -168,5 +168,16 @@ describe('resolveLlm：per-agent provider（M11 stretch，0.1.2 解锁）', () =
       model: 'm1',
       agents: [{ id: 'x', provider: 'ollama' }],
     })).toThrow(/deepseek-official/)
+  })
+})
+
+describe('minimax 预设（真实第三方 OpenAI 兼容端点）', () => {
+  it('端点 + apiKeyEnv 引用（机密不进声明）', () => {
+    const resolved = resolveLlm({ model: 'MiniMax-M3', provider: 'minimax' })
+    expect(resolved).toMatchObject({
+      kind: 'pi-ai',
+      active: 'minimax',
+      routes: [{ route: 'minimax', api: 'openai-completions', baseURL: 'https://api.minimaxi.com/v1', apiKeyEnv: 'MINIMAX_API_KEY' }],
+    })
   })
 })

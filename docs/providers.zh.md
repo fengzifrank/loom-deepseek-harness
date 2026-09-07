@@ -12,6 +12,7 @@
 | `deepseek-official`（缺省） | DeepSeek 官方 API | `DEEPSEEK_API_KEY` | 云端零配置，现状不变 |
 | `ollama` | `http://127.0.0.1:11434/v1` | 免认证（自动带匿名头） | 内网/离线部署，农业 FDE 私有化 |
 | `openrouter` | `https://openrouter.ai/api/v1` | `OPENROUTER_API_KEY` | 一个 key 用遍各家云端模型 |
+| `minimax` | `https://api.minimaxi.com/v1` | `MINIMAX_API_KEY` | MiniMax-M3 等真实第三方端点 |
 | `openai-compatible` | 自定（必须给 baseURL） | 可选 | vLLM / LiteLLM / 自建网关 |
 
 ## 用法
@@ -113,6 +114,22 @@ const app = defineApp('tcm-platform', {
     provider: ollama
     model: "qwen3:32b"
 ```
+
+### MiniMax-M3（真实第三方实证）
+
+```ts
+const app = defineApp('x', { model: 'MiniMax-M3', provider: 'minimax' })
+// key 从环境变量 MINIMAX_API_KEY 每请求解析（.env，gitignore）
+```
+
+实测（2026-09，直连 curl + 框架全链 e2e 双重验证）：
+- 端点 OpenAI 兼容（`/v1/chat/completions`，Bearer），流式标准 chunk；
+- **函数调用完整支持**（`finish_reason=tool_calls`）——框架工具管线全链可用；
+- **M3 是思考模型且 `<think>` 内联在 content**（无独立 reasoning 字段）——
+  会话日志会如实记录思考文本；需要纯答案的提示词要显式约束；
+- 用量字段为 `prompt_tokens/completion_tokens`（OpenAI 形），pi-ai 适配正常；
+- e2e：`examples/gis/tests/minimax.e2e.test.ts`（组合断言 + 真实流式文本轮 +
+  probe_echo 函数调用全链 + 多轮上下文；无 `MINIMAX_API_KEY` 自跳过）。
 
 ## 测试证据
 
