@@ -11,6 +11,7 @@
  */
 
 import type { AppSpec, SubagentSpec } from './types.js'
+import { RESERVED_SUB_TOOLS } from './swarm.js'
 
 /** subagent 声明的编译产物。 */
 export interface CompiledSubagents {
@@ -24,16 +25,22 @@ export interface CompiledSubagents {
   readonly toolFilterOf: (spec: SubagentSpec) => { allow: string[] } | undefined
 }
 
-/** 校验 + 编译（引用完整性：诚实失败优于静默缺工具/缺父）。 */
+/** 校验 + 编译（引用完整性：诚实失败优于静默缺工具/缺父）。
+ *
+ * M15 起：父可以是 agent id **或子智能体 id**（mesh 对等委派——成员互相
+ * visibleTo）；工具清单可含保留名（'subagent'/'swarm_note'/'swarm_recall'，
+ * 由 runtime 注册的真实全局工具，豁免 app.tool 校验，也不进 globalToolNames
+ * ——runtime 自己注册它们，此处收集会撞名）。 */
 export function compileSubagents(spec: Pick<AppSpec, 'tools' | 'agents' | 'subagents'>): CompiledSubagents {
   const toolNames = new Set(spec.tools.map(tool => tool.name))
   const agentIds = new Set(spec.agents.map(agent => agent.id))
+  const subagentIds = new Set(spec.subagents.map(sub => sub.id))
   const allToolNames = spec.tools.map(tool => tool.name)
 
   for (const sub of spec.subagents) {
     if (sub.tools !== undefined) {
       for (const toolName of sub.tools) {
-        if (!toolNames.has(toolName)) {
+        if (!toolNames.has(toolName) && !RESERVED_SUB_TOOLS.has(toolName)) {
           throw new Error(`loom-runtime: 子智能体 "${sub.id}" 引用了未声明的工具 "${toolName}"`)
         }
       }
@@ -42,7 +49,7 @@ export function compileSubagents(spec: Pick<AppSpec, 'tools' | 'agents' | 'subag
       throw new Error(`loom-runtime: 子智能体 "${sub.id}" 的 visibleTo 不能为空（至少一个父 agent 才能委派它）`)
     }
     for (const parentId of sub.visibleTo) {
-      if (!agentIds.has(parentId)) {
+      if (!agentIds.has(parentId) && !subagentIds.has(parentId)) {
         throw new Error(`loom-runtime: 子智能体 "${sub.id}" 的 visibleTo 引用了未声明的智能体 "${parentId}"`)
       }
     }
@@ -59,7 +66,9 @@ export function compileSubagents(spec: Pick<AppSpec, 'tools' | 'agents' | 'subag
 
   const globalToolNames = new Set<string>()
   for (const sub of spec.subagents) {
-    for (const name of sub.tools ?? allToolNames) globalToolNames.add(name)
+    for (const name of sub.tools ?? allToolNames) {
+      if (!RESERVED_SUB_TOOLS.has(name)) globalToolNames.add(name)
+    }
   }
 
   return {

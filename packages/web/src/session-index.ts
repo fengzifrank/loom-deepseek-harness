@@ -25,6 +25,8 @@ export interface SessionIndexRecord {
   updatedAt: string
   /** 缺省 chat。 */
   kind?: SessionIndexKind
+  /** M15：child 会话的父会话 id（会话树根解析跨重启；additive 向后兼容）。 */
+  parentSessionId?: string
 }
 
 /** 索引文件整体形态。 */

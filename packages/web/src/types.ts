@@ -227,6 +227,38 @@ export interface SubagentSpec {
   readonly visibleTo: string[]
 }
 
+/** app.swarm() 的成员声明（M15）。 */
+export interface SwarmMemberSpec {
+  readonly id: string
+  /** 角色标注（worker/specialist/reviewer…自由文本，注入 persona 与 health）。 */
+  readonly role?: string
+  readonly persona: string
+  readonly tools?: string[]
+}
+
+/** app.swarm() 的声明形态（M15）。 */
+export interface SwarmSpec {
+  /** 入口智能体（注册为普通 agent，HTTP 寻址 /agents/{id}/sessions）。 */
+  readonly entry: { readonly id: string; readonly persona: string; readonly tools?: string[] }
+  /** 拓扑：hierarchical（入口→成员单层） / mesh（成员间可对等委派，深度≥2）。 */
+  readonly topology: 'hierarchical' | 'mesh'
+  readonly members: readonly SwarmMemberSpec[]
+  /** 群体记忆（swarm_note / swarm_recall，会话树命名空间）；默认 false。 */
+  readonly memory?: boolean
+  /** 委派深度上限（hierarchical 固定 1；mesh 默认 2；封顶 3）。 */
+  readonly depth?: number
+}
+
+/** 群体的运行时元数据（声明期展开后留下的部分；runtime 消费）。 */
+export interface SwarmMeta {
+  readonly name: string
+  readonly topology: 'hierarchical' | 'mesh'
+  readonly depth: number
+  readonly memory: boolean
+  readonly entryId: string
+  readonly memberIds: readonly string[]
+}
+
 /**
  * Python 工具桥声明（M6 生效：compose 加 python-bridge 行，spawn Python 子进程
  * 按 loom-py 协议握手，@tool 清单注册为代理工具——模型可见，全部 agent 共享）。
@@ -272,6 +304,8 @@ export interface AppSpec {
   providers?: Record<string, LlmProviderOptions>
   /** MCP 服务器（M10 生效；工具以 mcp__<serverName>__<rawName> 注册，走全局工具层与策略/审批门）。 */
   mcps?: McpServerSpec[]
+  /** 群体元数据（M15；entry/members 已展开进 agents/subagents，此处只留拓扑元数据）。 */
+  swarms: SwarmMeta[]
   /** 技能文件（M12 生效；SKILL.md 目录 → 模型面 skill 工具 + 会话目录热刷新）。 */
   skills?: AppSkillsSpec
 }
@@ -415,6 +449,20 @@ export interface App {
    * v1 注册在全局工具层（全部 agent 可见，与 Python 桥一致）；策略/审批照常生效。
    * 机密只经 envRef/headerRefs 环境变量引用——不进声明，也不进生成的 cordis.yml。
    */
+  /**
+   * 声明一个群体（M15）：入口 + 成员的声明式拓扑（hierarchical / mesh）+
+   * 可选群体记忆（swarm_note / swarm_recall，会话树命名空间共享）。
+   * 声明期即展开为 agent + subagents（compose 零改动），可见性按拓扑计算；
+   * mesh 下成员可对等委派（内核 maxDepth 深度帽防失控）。
+   */
+  swarm(name: string, opts: {
+    entry: { id: string; persona: string; tools?: string[] }
+    topology: 'hierarchical' | 'mesh'
+    members: Array<{ id: string; role?: string; persona: string; tools?: string[] }>
+    memory?: boolean
+    depth?: number
+  }): App
+
   mcp(serverName: string, opts: {
     transport: 'stdio' | 'streamable-http'
     command?: string

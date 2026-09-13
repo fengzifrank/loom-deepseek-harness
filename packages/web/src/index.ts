@@ -26,6 +26,9 @@ import type {
   DefineAppOptions,
   LlmProviderOptions,
   McpServerSpec,
+  SwarmMeta,
+  SwarmSpec,
+  SwarmMemberSpec,
   PolicySpec,
   ProjectionEvent,
   ProjectionSpec,
@@ -39,6 +42,7 @@ import type {
   WebhookChannelSpec,
 } from './types.js'
 import { assertPolicySpec } from './policy.js'
+import { compileSwarm, RESERVED_SUB_TOOLS } from './swarm.js'
 import type { LoomZSchema } from './schema.js'
 import { isSchemastery, schemasteryToOutputDsl, warnInputDslIssues, warnOutputDslIssues } from './schema.js'
 export { composeCordisYml } from './compose.js'
@@ -59,6 +63,9 @@ export type {
   InferToolOutput,
   LlmProviderOptions,
   McpServerSpec,
+  SwarmMemberSpec,
+  SwarmMeta,
+  SwarmSpec,
   PolicySpec,
   ProjectionEvent,
   ProjectionSpec,
@@ -122,6 +129,8 @@ export {
 } from './webhook.js'
 export type { SignatureVerdict, SignatureFailure, MapVerdict, KeyVerdict } from './webhook.js'
 export { compileSubagents, denyListForAgent } from './subagent.js'
+export { compileSwarm, DELEGATION_TOOL_NAME, SWARM_MEMORY_TOOL_NAMES, SWARM_MAX_DEPTH, RESERVED_SUB_TOOLS } from './swarm.js'
+export type { SwarmCompileContext, CompiledSwarm } from './swarm.js'
 export type { CompiledSubagents } from './subagent.js'
 export {
   TOKEN_TTL_MS,
@@ -227,6 +236,7 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
     provider?: string
     providers?: Record<string, LlmProviderOptions>
     mcps?: McpServerSpec[]
+    swarms?: SwarmMeta[]
     skills?: AppSkillsSpec
   } = {
     name,
@@ -241,6 +251,7 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
     ...(opts.provider === undefined ? {} : { provider: opts.provider }),
     ...(opts.providers === undefined ? {} : { providers: { ...opts.providers } }),
     mcps: [],
+    swarms: [],
   }
 
   const app: App = {
@@ -456,10 +467,11 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
       if (!Array.isArray(subOpts.visibleTo) || subOpts.visibleTo.length === 0) {
         throw new Error(`subagent("${id}") 的 visibleTo 必须是非空数组（至少一个父 agent 才能委派它）`)
       }
-      // 声明期守门：子规格 tools 引用的工具必须已声明（与 agent.tools 同规）。
+      // 声明期守门：子规格 tools 引用的工具必须已声明（与 agent.tools 同规）；
+      // M15 起保留名（subagent / swarm_note / swarm_recall——runtime 注册的全局工具）豁免。
       if (subOpts.tools !== undefined) {
         for (const toolName of subOpts.tools) {
-          if (!spec.tools.some(tool => tool.name === toolName)) {
+          if (!RESERVED_SUB_TOOLS.has(toolName) && !spec.tools.some(tool => tool.name === toolName)) {
             throw new Error(
               `defineApp(${name}): 子智能体 "${id}" 引用了未声明的工具 "${toolName}"`
               + '——工具须在引用它的 subagent 之前 app.tool(...) 声明',
@@ -518,6 +530,31 @@ export function defineApp(name: string, opts: DefineAppOptions = {}): App {
         ...(authOpts.mode === undefined ? {} : { mode: authOpts.mode }),
         ...(authOpts.corsOrigins === undefined ? {} : { corsOrigins: [...authOpts.corsOrigins!] }),
       }
+      return app
+    },
+
+    /**
+     * 声明一个群体（M15）：声明期展开为 entry agent + member subagents
+     * （visibleTo 按拓扑计算），spec.swarms 只留元数据——compose 零改动。
+     * mesh 拓扑下成员可对等委派（深度帽内核强制）；memory 开启会话树群体记忆。
+     */
+    swarm(swarmName: string, swarmOpts: {
+      entry: { id: string; persona: string; tools?: string[] }
+      topology: 'hierarchical' | 'mesh'
+      members: Array<{ id: string; role?: string; persona: string; tools?: string[] }>
+      memory?: boolean
+      depth?: number
+    }) {
+      const compiled = compileSwarm(swarmName, swarmOpts as SwarmSpec, {
+        toolNames: spec.tools.map(tool => tool.name),
+        allToolNames: spec.tools.map(tool => tool.name),
+        agentIds: spec.agents.map(agent => agent.id),
+        subagentIds: spec.subagents.map(sub => sub.id),
+        swarmNames: spec.swarms!.map(swarm => swarm.name),
+      })
+      spec.agents.push({ id: compiled.entryAgent.id, persona: compiled.entryAgent.persona, tools: compiled.entryAgent.tools })
+      spec.subagents.push(...compiled.memberSubagents)
+      spec.swarms!.push(compiled.meta)
       return app
     },
 

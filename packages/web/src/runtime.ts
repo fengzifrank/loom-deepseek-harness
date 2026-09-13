@@ -62,12 +62,13 @@ import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { BlockAssembler, createUserMessage } from '@deepseek-ai/dsh-llm'
 import z from '@deepseek-ai/schemastery'
-import type { App, ProjectionSpec, SubagentSpec, ToolSpec, WebhookChannelSpec } from './types.js'
+import type { App, ProjectionSpec, SubagentSpec, SwarmMeta, ToolSpec, WebhookChannelSpec } from './types.js'
 import { compilePolicy, type CompiledPolicy } from './policy.js'
 import { BudgetMeter, describeBudget, type BudgetExceeded } from './budget.js'
 import { httpRouteOf } from './http-route.js'
 import { generateOpenapi } from './openapi-gen.js'
 import { compileSubagents, denyListForAgent, type CompiledSubagents } from './subagent.js'
+import { DELEGATION_TOOL_NAME, SWARM_MEMORY_TOOL_NAMES } from './swarm.js'
 import { applyWebhookMap, applyWebhookSessionKey, verifyWebhookSignature, webhookSessionId } from './webhook.js'
 import type { LoomPythonService } from './python-bridge.js'
 import { AccountStore, resolveIdentity, signToken, type LoomIdentity } from './auth.js'
@@ -449,6 +450,14 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
   const app: App = loaded
   const toolsByName = new Map<string, ToolSpec>(app.spec.tools.map(tool => [tool.name, tool]))
   const agentsById = new Map(app.spec.agents.map(agent => [agent.id, agent]))
+  // M15 群体元数据：入口与成员 → 所属群体（深度/记忆消费方）。
+  const swarms = app.spec.swarms
+  const swarmByParticipant = new Map<string, SwarmMeta>()
+  for (const swarm of swarms) {
+    swarmByParticipant.set(swarm.entryId, swarm)
+    for (const memberId of swarm.memberIds) swarmByParticipant.set(memberId, swarm)
+  }
+  const swarmMemoryOn = swarms.some(swarm => swarm.memory)
   const projectionsByName = new Map<string, ProjectionSpec>(app.spec.projections.map(p => [p.name, p]))
   const cards: CardIndex = new Map(
     app.spec.tools
@@ -466,10 +475,11 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
   )
 
   // 校验 agent.tools 引用都有对应工具声明（诚实失败优于静默缺工具）。
+  // M15 豁免保留名（swarm_note/swarm_recall——swarm 群体记忆注入，runtime 注册）。
   for (const agent of app.spec.agents) {
     if (agent.tools === undefined) continue
     for (const toolName of agent.tools) {
-      if (!toolsByName.has(toolName)) {
+      if (!toolsByName.has(toolName) && !SWARM_MEMORY_TOOL_NAMES.includes(toolName as never)) {
         throw new Error(`loom-runtime: 智能体 "${agent.id}" 引用了未声明的工具 "${toolName}"`)
       }
     }
@@ -511,8 +521,12 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
       if (toolSpec === undefined) continue // compileSubagents 已校验，防御性兜底
       c.tools.register(toDefineToolArgs(toolSpec))
     }
+    // M15：委派工具全局注册（调用者感知——执行期按调用者解析可见规格与深度），
+    // 无委派权的 agent 在 buildAgentSetup 里经 deny 摘除（全局层 restrict）。
+    c.tools.register(buildDelegationTool())
     for (const [parentId, specs] of compiledSubagents.byParent) {
-      c.logger.info(`loom-runtime: 子智能体委派工具 subagent 已按 ${parentId} 作用域注册（可见规格：${specs.map(s => s.id).join(', ')}）`)
+      const swarm = swarmByParticipant.get(parentId)
+      c.logger.info(`loom-runtime: 委派权 ${parentId} → ${specs.map(s => s.id).join(', ')}${swarm === undefined ? '' : `（swarm "${swarm.name}" 深度 ${swarm.depth}）`}`)
     }
   }
 
@@ -593,6 +607,127 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
 
   /** M7 记忆模型工具（app.memory 声明时全局注册；memory 关闭的 agent 被 restrict 摘除）。 */
   const MEMORY_TOOL_NAMES = ['memory_search', 'memory_write', 'memory_forget'] as const
+
+  // M15 群体记忆：会话树命名空间——合成 userId `swarm:{rootSessionId}` 复用 MemoryStore
+  // 全部 FTS/软删/隔离（userId 是唯一分区，零 schema 变更）。app.memory 未声明时为群体
+  // 单独建库（提取链不启用，只服务 swarm_note/swarm_recall）。
+  const swarmStore = memoryStore ?? (swarmMemoryOn ? new MemoryStore(join(loomDir, 'memory.db')) : undefined)
+  if (swarmStore !== undefined && swarmStore !== memoryStore) {
+    ;(c as unknown as { on(event: 'dispose', listener: () => void): unknown }).on('dispose', () => {
+      try {
+        swarmStore.close()
+      } catch {
+        /* 关闭失败不阻塞卸载 */
+      }
+    })
+  }
+  /** swarm 记忆参与方：该 agent 是某个 memory:true 群体的入口或成员。 */
+  const swarmMemoryEnabled = (agentId: string): boolean => {
+    const swarm = swarmByParticipant.get(agentId)
+    return swarm !== undefined && swarm.memory
+  }
+  if (swarmStore !== undefined && swarmMemoryOn) {
+    // swarm_note：把发现写入群体笔记（会话树作用域，树内全部成员可见）。
+    c.tools.register(defineToolLoose({
+      name: 'swarm_note',
+      description: '把值得共享给同伴的发现（数据、结论、线索）记入群体笔记——同一任务群体的全部成员都能检索到。',
+      parameters: {
+        content: { type: 'string', required: true, description: '要共享的发现要点（写清楚数据与结论）' },
+        tag: { type: 'string', description: '可选标签（如「地类数据」「风险」）' },
+      },
+      output: {
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            id: { type: 'string', required: true },
+            note: { type: 'string', required: true },
+          },
+        },
+        render: (_args: unknown, value: unknown): Array<Record<string, unknown>> => [{ type: 'text', text: JSON.stringify(value, null, 2) }],
+      },
+      async execute(args: Record<string, unknown>, exec: { agent?: unknown; signal?: AbortSignal }): Promise<unknown> {
+        const sessionId = (exec.agent as AgentLike | undefined)?.session?.id
+        if (typeof sessionId !== 'string') throw new Error('swarm_note 需要会话上下文（无归属会话不可写群体笔记）')
+        const content = typeof args.content === 'string' ? args.content.trim() : ''
+        if (content === '') throw new Error('content 必须是非空字符串')
+        const tag = typeof args.tag === 'string' && args.tag.trim() !== '' ? `【${args.tag.trim()}】` : ''
+        const note = `${tag}${content}`
+        const record = swarmStore.insert({
+          userId: `swarm:${rootSessionIdOf(sessionId)}`,
+          kind: 'fact',
+          content: note,
+          agentId: delegatorIdOf(exec.agent) ?? 'unknown',
+          sourceSession: sessionId,
+        })
+        return { id: record.id, note }
+      },
+    }))
+    // swarm_recall：FTS 检索群体笔记（会话树命名空间）。
+    c.tools.register(defineToolLoose({
+      name: 'swarm_recall',
+      description: '检索群体笔记——同伴（或自己）此前记入的共享发现。行动前先查，避免重复劳动。',
+      parameters: {
+        query: { type: 'string', required: true, description: '检索词（支持中文子串）' },
+        limit: { type: 'number', description: '返回条数上限（默认 5）' },
+      },
+      output: {
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            items: {
+              type: 'array',
+              required: true,
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  id: { type: 'string', required: true },
+                  content: { type: 'string', required: true },
+                  agent: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        render: (_args: unknown, value: unknown): Array<Record<string, unknown>> => [{ type: 'text', text: JSON.stringify(value, null, 2) }],
+      },
+      async execute(args: Record<string, unknown>, exec: { agent?: unknown; signal?: AbortSignal }): Promise<unknown> {
+        const sessionId = (exec.agent as AgentLike | undefined)?.session?.id
+        if (typeof sessionId !== 'string') throw new Error('swarm_recall 需要会话上下文（无归属会话不可检索群体笔记）')
+        const query = typeof args.query === 'string' ? args.query.trim() : ''
+        if (query === '') throw new Error('query 必须是非空字符串')
+        const limit = Math.min(Math.max(Number(args.limit ?? 5) || 5, 1), 20)
+        const items = swarmStore.search(`swarm:${rootSessionIdOf(sessionId)}`, query, limit)
+          .map(record => ({ id: record.id, content: record.content, ...(record.agentId === null ? {} : { agent: record.agentId ?? undefined }) }))
+        return { items }
+      },
+    }))
+    c.logger.info(`loom-runtime: 群体记忆已开启 —— 群体：${swarms.filter(s => s.memory).map(s => `${s.name}(${s.topology}, 入口 ${s.entryId} + ${s.memberIds.length} 成员)`).join('；')}（会话树命名空间）`)
+  }
+
+  /** M15 委派调用者 id：子会话取 childSpec（mesh 成员），普通会话取 sidecar agentId。 */
+  function delegatorIdOf(agent: unknown): string | undefined {
+    const sessionId = (agent as AgentLike | undefined)?.session?.id
+    if (typeof sessionId !== 'string') return undefined
+    const entry = ownedSessions.get(sessionId)
+    if (entry?.childSpec !== undefined) return entry.childSpec
+    return sessionIndex.get(sessionId)?.agentId
+  }
+
+  /** M15 会话树根：child 沿 parentSessionId（内存 → sidecar）上溯到 chat 顶点；环保护。 */
+  function rootSessionIdOf(sessionId: string): string {
+    let current = sessionId
+    const seen = new Set<string>()
+    for (;;) {
+      if (seen.has(current)) return sessionId
+      seen.add(current)
+      const parent = ownedSessions.get(current)?.parentSessionId ?? sessionIndex.get(current)?.parentSessionId
+      if (parent === undefined) return current
+      current = parent
+    }
+  }
 
   /** 工具执行时从 exec.agent 反查 userId（会话 sidecar 归属；无归属拒绝）。 */
   function userIdOfAgentSession(agent: unknown): string {
@@ -836,6 +971,8 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
         callIndex: rebuildCallIndex(prepared.session),
         forked: kind === 'fork',
         child: kind === 'child',
+        // M15：父子链恢复（sidecar 持久化后重启仍可解析会话树根）。
+        ...(record.parentSessionId === undefined ? {} : { parentSessionId: record.parentSessionId }),
       }
       ownedSessions.set(sessionId, entry)
       c.logger.info(`loom-runtime: ${kind} 会话 ${sessionId} 已重建只读回放视图`)
@@ -1190,6 +1327,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
             ...(budget.effect === undefined ? {} : { effect: budget.effect }),
           })),
         }),
+        ...(swarms.length === 0 ? {} : { swarms: swarms.map(swarm => ({ name: swarm.name, topology: swarm.topology, depth: swarm.depth, memory: swarm.memory, entry: swarm.entryId, members: [...swarm.memberIds] })) }),
         ...(authEnabled ? { auth: { mode: authSpec!.mode ?? 'anon-and-local', corsOrigins: corsOrigins ?? null } } : {}),
         ...(memorySpec === undefined ? {} : { memory: { extraction: extractionOn, recall: recallOn, agents: app.spec.agents.filter(agent => memoryEnabled(agent.id)).map(agent => agent.id), paths: app.spec.agents.filter(agent => pathsEnabled(agent.id)).map(agent => agent.id) } }),
         httpApi: app.spec.tools
@@ -1529,8 +1667,11 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
     const denyList = [
       ...(compiledSubagents === undefined ? [] : denyListForAgent(compiledSubagents, visibleTools)),
       ...(memoryStore !== undefined && !memoryEnabled(agentId) ? [...MEMORY_TOOL_NAMES] : []),
+      // M15：委派工具全局注册——无委派权的 agent（不在任何 visibleTo 父位）摘除；
+      // 群体记忆工具——非 memory:true 群体参与方摘除。
+      ...(compiledSubagents !== undefined && !compiledSubagents.byParent.has(agentId) ? [DELEGATION_TOOL_NAME] : []),
+      ...(swarmMemoryOn && !swarmMemoryEnabled(agentId) ? [...SWARM_MEMORY_TOOL_NAMES] : []),
     ]
-    const visibleSubagentSpecs = compiledSubagents?.byParent.get(agentId)
     return agentCtx => {
       // per-agent persona：同名 section 遮蔽部署默认 persona（order 0）。
       if (registerPersona) {
@@ -1549,10 +1690,8 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
       // 全局层兜底：本父不可见的全局工具摘除（restrict 只作用于全局层，
       // 不影响上面本作用域注册的同名/其他工具）。
       if (denyList.length > 0) agentCtx.tools.restrict({ deny: denyList })
-      // M3：visibleTo 命中的父 agent 作用域注册 subagent 委派工具。
-      if (visibleSubagentSpecs !== undefined && visibleSubagentSpecs.length > 0) {
-        agentCtx.tools.register(buildSubagentTool(agentId, visibleSubagentSpecs))
-      }
+      // M15：subagent 委派工具改为全局注册（buildDelegationTool，调用者感知），
+      // 这里不再按父作用域注册——有委派权的 agent 经 deny 例外自然可见。
     }
   }
 
@@ -1586,15 +1725,15 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
    * 前台 one-shot 语义：await run.result 再 dispose（镜像内核 settleForegroundRun）；
    * 子会话 id 即 run.id，登记后既有 /sessions/:sid/events 直接开子会话直播。
    */
-  function buildSubagentTool(parentAgentId: string, specs: readonly SubagentSpec[]): unknown {
-    const specIds = specs.map(spec => spec.id)
+  function buildDelegationTool(): unknown {
+    const allSpecIds = [...compiledSubagents!.byId.keys()]
     return defineToolLoose({
-      name: 'subagent',
+      name: DELEGATION_TOOL_NAME,
       description: '把一个自包含的任务委派给子智能体（独立上下文与工具集的另一个 agent，不消耗本对话上下文）。'
-        + '可用规格：' + specs.map(spec => `${spec.id}（${truncate(spec.persona.split('：')[0] ?? spec.persona, 60)}）`).join('；') + '。'
+        + '你的角色可委派的规格：' + allSpecIds.join(' | ') + '（执行期校验实际可见集，报错会列出你可用的那份）。'
         + '子智能体看不到本对话历史——task 必须写明全部背景（查证对象、口径、要回答的问题）。适合并行核对、独立调研等场景。',
       parameters: {
-        spec: { type: 'string', required: true, description: `子智能体规格名：${specIds.join(' | ')}` },
+        spec: { type: 'string', required: true, description: `子智能体规格名：${allSpecIds.join(' | ')}` },
         task: { type: 'string', required: true, description: '自包含的任务描述（子智能体看不到本对话，需包含全部背景与要查证的对象）' },
       },
       output: {
@@ -1618,11 +1757,16 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
         if (parent === undefined || parentSessionId === undefined) {
           throw new Error('subagent 工具需要 agent 调用方（内核 agent loop 之外不可委派）')
         }
+        // M15：调用者感知——子会话取 childSpec（mesh 对等委派的成员），普通会话取 sidecar agentId。
+        const callerId = delegatorIdOf(parent) ?? '(未知调用者)'
+        const specs = compiledSubagents!.byParent.get(callerId) ?? []
         const requested = String(args.spec ?? '')
         const spec = specs.find(candidate => candidate.id === requested)
         if (spec === undefined) {
-          throw new Error(`智能体 "${parentAgentId}" 只能委派声明的子规格：${specIds.join(' / ')}，收到 "${requested}"`)
+          throw new Error(`智能体 "${callerId}" 只能委派声明的子规格：${specs.map(s => s.id).join(' / ') || '(无)'}，收到 "${requested}"`)
         }
+        // M15：深度帽按调用者所属群体（mesh ≥2 允许成员再委派；内核另有单调深度硬终止）。
+        const maxDepth = swarmByParticipant.get(callerId)?.depth ?? 1
         const task = typeof args.task === 'string' ? args.task.trim() : ''
         if (task === '') throw new Error('task 必须是非空字符串')
         const toolFilter = compiledSubagents?.toolFilterOf(spec)
@@ -1632,7 +1776,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
           parent,
           persona: spec.persona,
           ...(toolFilter === undefined ? {} : { toolFilter }),
-          maxDepth: 1,
+          maxDepth,
           signal: exec.signal ?? new AbortController().signal,
         })
         // 子会话登记：SubagentRun.id 即子会话 id（本地 spawn 保证），子会话与父
@@ -1656,6 +1800,8 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
             createdAt: now,
             updatedAt: now,
             kind: 'child',
+            // M15：父子链持久化（会话树根解析跨重启成立；字段 additive 向后兼容）。
+            parentSessionId,
           })
         }
         pushSse(parentSessionId, { type: 'loom/subagent-started', spec: spec.id, childSessionId, parentSessionId })
@@ -1670,7 +1816,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
         if (result.stopReason !== 'completed') {
           throw new Error(`子智能体 "${spec.id}" 未正常完成（stopReason=${result.stopReason}）${childText === '' ? '' : `；其保留的部分输出：\n${childText}`}`)
         }
-        c.logger.info(`loom-runtime: ${parentAgentId} 委派 ${spec.id} 完成（子会话 ${childSessionId}）`)
+        c.logger.info(`loom-runtime: ${callerId} 委派 ${spec.id} 完成（子会话 ${childSessionId}，maxDepth=${maxDepth}）`)
         return { spec: spec.id, sessionId: childSessionId, stopReason: result.stopReason, output: childText }
       },
     })
