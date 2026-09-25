@@ -90,12 +90,18 @@ export function composeCordisYml(opts: ComposeOptions): string {
   const llm = opts.llm ?? { kind: 'deepseek-official' } as const
   const llmBlock = llm.kind === 'deepseek-official'
     ? `
-# 凭据行镜像 examples/jsonrpc-agent/minimal.cordis.yml 的 apiKeyEnv 做法；
-# key 从环境变量 DEEPSEEK_API_KEY 每请求解析（CLI 已加载 entry 同目录 .env）。
+# 0.1.7 起 dsh-llm-deepseek 是纯库（无 apply），挂载移至 host 插件
+# dsh-llm-deepseek-api-key（镜像官方 sdk-minimal 组合行）；api-extensions 是
+# 适配器栈的必备前置行。key 仍从环境变量 DEEPSEEK_API_KEY 每请求解析（无凭据
+# 服务时回落宿主环境——env-only 应用零配置不变）。
+- id: deepseek-llm-api-extensions
+  name: '@deepseek-ai/dsh-deepseek-llm-api-extensions'
+
 - id: llm-deepseek
-  name: '@deepseek-ai/dsh-llm-deepseek'
+  name: '@deepseek-ai/dsh-llm-deepseek-api-key'
   config:
     apiKeyEnv: DEEPSEEK_API_KEY
+    streamIdleTimeoutMs: 172800000
 `
     : `\n# M11 模型网关：dsh-llm-pi-ai 多提供方路由（app.provider = "${llm.active}"）。
 # 路由键即 provider 名；机密只经 apiKeyEnv 引用（每请求解析），不进本文件。
@@ -118,7 +124,7 @@ ${llm.routes.map(route => [
 `
   const agentDefaultModelBlock = llm.kind === 'deepseek-official'
     ? `    provider: deepseek-official
-    model: deepseek-v4-flash`
+    model: deepseek-flash`
     : `    provider: ${llm.active}
     model: ${y(llm.model)}`
   const approvalBlock = opts.withApproval === true
@@ -187,6 +193,8 @@ ${llm.routes.map(route => [
       '',
       `# MCP 服务器 "${server.serverName}"（app.mcp 声明）：工具以 mcp__${server.serverName}__<rawName>`,
       '# 注册到全局工具层（断线指数退避重连 + 世代回滚；HMR 热替换）。',
+      `- id: mcp-resources`,
+      "  name: '@deepseek-ai/dsh-mcp-resources'",
       `- id: mcp-${server.serverName}`,
       "  name: '@deepseek-ai/dsh-mcp-client'",
       '  config:',

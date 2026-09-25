@@ -184,14 +184,18 @@ describe.skipIf(!hasKey || !sdkBuilt())('真实审批链 e2e（带 key）', () =
     const sourceSeqs = all.filter(e => typeof e.seq === 'number' && e.seq <= boundary).map(e => e.seq)
     expect(childSeqs).toEqual(sourceSeqs)
 
-    // fork 切在 turn 中间（tool/call 的 seq）→ 400 + OPEN_TURN 提示
+    // 0.1.7 语义变更：turn 中间分叉不再拒绝——buildForkSeed 用合成 forked 收尾器
+    // 关闭开放尾（interruptedTurnClosers 家族），子会话是合法的前缀快照。
     const midTurn = all.find(e => e.type === 'tool/call' && e.name === 'gis_update_land_note')!.seq as number
-    const badRes = await fetch(`${loom!.base}/sessions/${sessionId}/fork`, {
+    const midRes = await fetch(`${loom!.base}/sessions/${sessionId}/fork`, {
       method: 'POST', headers: { 'content-type': 'application/json', ...ANON_HEADERS }, body: JSON.stringify({ atSeq: midTurn }),
     })
-    expect(badRes.status).toBe(400)
-    const badBody = (await badRes.json()) as { code: string; hint: string }
-    expect(badBody.code).toBe('OPEN_TURN')
-    expect(badBody.hint).toContain('turn/end')
+    expect(midRes.status).toBe(200)
+    const midBody = (await midRes.json()) as { sessionId: string; atSeq: number }
+    expect(midBody.atSeq).toBe(midTurn)
+    const midChild = await readEventRange(loom!.base, midBody.sessionId, -1, 1_000_000_000)
+    // 子会话继承前缀 + 合成收尾（open turn 被 forked 关闭）
+    expect(midChild.filter(e => typeof e.seq === 'number').every(e => (e.seq as number) >= 0)).toBe(true)
+    expect(midChild.some(e => e.type === 'tool/call' && e.name === 'gis_update_land_note')).toBe(true)
   }, 60_000)
 })

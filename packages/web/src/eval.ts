@@ -155,10 +155,11 @@ function reasonKind(reason: unknown): string {
   return String(reason ?? '')
 }
 
-/** 从 tool/result 事件提取结果信息。 */
+/** 从 tool/result 事件提取结果信息（0.1.7 v4 平铺块 / 旧 v2 嵌套块双兼容）。 */
 function resultInfo(event: EvalEvent): { isError: boolean; preview: string; value?: unknown } {
-  const block = Array.isArray(event.data?.message?.content) ? event.data.message.content[0] : undefined
-  const preview = textOfBlocks(block === undefined ? [] : block.content)
+  const blocks = Array.isArray(event.data?.message?.content) ? event.data.message.content : []
+  const block = blocks[0]
+  const preview = textOfBlocks(Array.isArray(block?.content) ? block.content : blocks)
   let value: unknown
   if (block !== undefined && !preview.includes('…(截断')) {
     try {
@@ -167,7 +168,7 @@ function resultInfo(event: EvalEvent): { isError: boolean; preview: string; valu
       value = undefined
     }
   }
-  return { isError: block !== undefined && block.isError === true, preview, ...(value === undefined ? {} : { value }) }
+  return { isError: event.data?.message?.isError === true || block?.isError === true, preview, ...(value === undefined ? {} : { value }) }
 }
 
 /** 事件数组 → 夹具视图（纯函数；defineEval/runEval 内部使用，单测可直接调）。 */

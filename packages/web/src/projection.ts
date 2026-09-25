@@ -86,14 +86,17 @@ export function projectEvent(event: SessionEventLike, callIndex: CallIndex, card
       }
     }
     case 'tool/result': {
-      const block = Array.isArray(d.message.content) ? d.message.content[0] : undefined
-      const call = callIndex.get(d.message.source.callId)
-      const text = truncate(textOfBlocks(block === undefined ? [] : (block as any).content))
+      // 0.1.7（格式 v4）：message.content 直接是内容块数组（text 块平铺），isError
+      // 在 message 层；旧 v2 形状是外层块内嵌 .content——双兼容（探针实测两种日志）。
+      const blocks = Array.isArray(d.message?.content) ? d.message.content : []
+      const flat = Array.isArray((blocks[0] as any)?.content) ? (blocks[0] as any).content : blocks
+      const call = callIndex.get(d.message?.source?.callId)
+      const text = truncate(textOfBlocks(flat as any))
       // 小结果全量下发：render 是 canonical JSON，原文不长时附解析值，投影可直接消费。
       let value: unknown
-      if (block !== undefined && !text.includes('…(截断')) {
+      if (!text.includes('…(截断')) {
         try {
-          const raw = textOfBlocks((block as any).content)
+          const raw = textOfBlocks(flat as any)
           if (raw.length <= VALUE_MAX) value = JSON.parse(raw)
         } catch {
           value = undefined
@@ -103,8 +106,8 @@ export function projectEvent(event: SessionEventLike, callIndex: CallIndex, card
         seq: event.seq,
         type: 'tool/result',
         callSeq: call === undefined ? undefined : call.seq,
-        name: call === undefined ? d.message.source.callId : call.name,
-        isError: block !== undefined && (block as any).isError === true,
+        name: call === undefined ? d.message?.source?.callId : call.name,
+        isError: d.message?.isError === true || (flat[0] as any)?.isError === true,
         preview: text,
         ...(value === undefined ? {} : { value }),
       }

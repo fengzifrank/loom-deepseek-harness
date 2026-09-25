@@ -1,6 +1,6 @@
 # Loom 状态与路线图（status.zh.md）
 
-> 状态总览与里程碑详情。当前一句话：**M1-M15 全量交付（harness 0.1.2 + 群体智能），测试全绿，已开源。**
+> 状态总览与里程碑详情。当前一句话：**M1-M16 全量交付（harness 0.1.7-rc.2），测试全绿，已开源。**
 
 ## 状态总览
 
@@ -35,6 +35,7 @@
 | **Semantica 融合**：Loom（执行/策略/审批/预算）× semantica 0.6.8（知识图/判例/因果链/SHACL/溯源）——双路径接入：M6 桥（`examples/semantica-demo/py_tools.py`，7 个类型化 `agri_*` 工具，含 MCP 面没有的 SHACL/溯源；图单写者 graph.json，惰性初始化避开次线程 OpenMP 卡死）与 M10 MCP（`loom.mcp-app.ts` 零代码，15 个 `mcp__semantica__*`，独立 KG 文件）；决策入账挂审批门、判例检索阈值 0.05（中文词面相似度实测 ~0.18，默认 0.5 全灭）；`--selftest` 钉 API 名（README 与实际导出漂移的 fail-loud 保险）+ `semanticaReady()` 守卫（未装 venv 全自跳过）——见 [docs/semantica.zh.md](docs/semantica.zh.md)；e2e 三段：无 key（boot/pythonTools=7/组合行/协议直调命中种子判例+落盘）、带 key（判例→审批卡→allowed-once→decisionId→因果链四证据链）、MCP 变体（failOnStartupError 注册门） | M13 | ✅ |
 | **Harness 0.1.2 迁移**：全仓 @deepseek-ai/* 0.1.1-rc.1 → **0.1.2-rc.1**（183 包）+ cordis 4.0.2 + schemastery 3.18.2——peer 依赖闭包（dsh-agent/jobs/sandbox 等 ~35 包显式声明）、`Session.events`→`snapshotEvents()` 单一收口适配（7 处）、组合加 session-projection 行（0.1.2 强制 peer 服务）、`z<RuntimeConfig>` 类型标注（peer 优化后 TS2742）；**解锁 per-agent provider**（`app.agent(id, { provider })`，0.1.2 AgentOptions 原生支持，声明期路由校验 + 模型目录自动并入，双路由 mock e2e 实证）；0.1.3-alpha 的 SessionHandle 破坏性变更暂不追——踩坑全程见 [docs/harness-0.1.2-migration.zh.md](docs/harness-0.1.2-migration.zh.md) | M14 | ✅ |
 | **群体智能（Swarm）**：`app.swarm(name, { entry, topology, members, memory, depth })` 一个声明拉起协作群体——声明期展开为 entry agent + member subagents（visibleTo 按拓扑计算：hierarchical 单层 / mesh 入口+同伴对等），compose 零改动；**群体记忆**（会话树命名空间：`swarm:{rootSessionId}` 合成 userId 零 schema 复用 MemoryStore 全部 FTS/隔离，swarm_note/swarm_recall 两工具 + 编译期 persona 纪律注入）；**mesh 深度 2 对等委派**（内核 maxDepth 解锁——委派工具全局注册调用者感知，子会话经 childSpec 识别身份，深度帽内核单调硬终止防环）；父子会话链持久化（sidecar parentSessionId，重启后会话树根解析仍成立）。设计出处：ruflo 概念层移植（拓扑图 + 命名空间共享记忆），共识/守护进程等明确拒绝——见 [docs/swarm.zh.md](docs/swarm.zh.md)；e2e 三段实证：health 元数据（无 key）/ 兄弟记忆传递（researcher 记 1200 亩笔记 → writer 检索命中同条）/ mesh 深度 2（researcher 自己委派 writer，第二级 started 的 parent=researcher 子会话） | M15 | ✅ |
+| **Harness 0.1.7-rc.2 迁移**：全仓 @deepseek-ai/* 0.1.2-rc.1 → **0.1.7-rc.2**（272 包，跨五个 minor 线）+ cordis 4.0.4 + schemastery 3.18.4——**对 Loom 应用开发者升级影响为零**（声明式 API 零变化，默认模型更替 deepseek-flash，存量会话自动迁移且原文件保留）。适配实录：组合层 llm-deepseek 换 host 插件包 dsh-llm-deepseek-api-key + api-extensions 前置行 + mcp-resources 前置行；持久化 API 重构（prepare→SessionHandle open/read，fork/child 回放轻量视图）；消息 source 词表迁移（plugin kind 移除→官方 runtime-context kind，实测自定义 kind 落盘被拒）；fork 语义放宽（turn 中间分叉合成 forked 收尾器，不再 OPEN_TURN 400）；tool/result v4 平铺块双形状兼容；会话格式 v2→v4 自动迁移（resume e2e 实证）——详见 [docs/harness-0.1.7-migration.zh.md](docs/harness-0.1.7-migration.zh.md)；全量 411 测试绿（与 0.1.2 基线持平，零回归）+ 冷启动就绪 | M16 | ✅ |
 | ACP 通道接入等后续演进 | Next | ⏳ |
 
 
@@ -56,4 +57,5 @@
 | M12 | 技能文件（app.skills + dsh-skill 三插件接线，SKILL.md 知识随应用走）+ 评估三级判定（pass/pass-with-caveats/fail，oci-agent 移植）+ 演员-评论家模式（critic 子智能体 + examples/critic-demo）——✅ 已交付 |
 | M13 | Semantica 融合（双路径：M6 桥类型化 agri_* 工具 + M10 MCP 零代码；知识图/判例/因果/SHACL/溯源接入 Loom 治理管线；examples/semantica-demo）——✅ 已交付 |
 | M15 | 群体智能（app.swarm 声明式拓扑 + 会话树群体记忆 + mesh 深度 2 对等委派；ruflo 概念层原生移植）——✅ 已交付 |
+| M16 | Harness 0.1.7-rc.2 迁移（跨五个 minor 线：SessionHandle 持久化重构 + 会话格式 v4 + 消息 source 词表 + DeepSeek 适配器 Messages-API-only；Loom API 零破坏）——✅ 已交付 |
 

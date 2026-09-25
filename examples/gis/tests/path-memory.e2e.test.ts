@@ -159,7 +159,7 @@ describe.skipIf(!sdkBuilt())('M8 path memory e2e（失败触发注入 + 重验�
       await new Promise(resolve => setTimeout(resolve, 300))
     }
     const log = sessionLogText(loom!.outDir, sessionId)
-    expect(log).toContain('"plugin":"loom-memory"')
+    expect(log).toContain('"kind":"runtime-context"')
     expect(log).toContain('gis_query_land_types')
     sse.close()
   }, 180_000)

@@ -203,9 +203,14 @@ interface ForkErrorLike extends Error {
   readonly code?: string
 }
 
-/** 内核 dsh-session-persistence 服务（loose 视图：fork/child 只读回放恢复用）。 */
+/** 内核 dsh-session-persistence 服务（loose 视图：0.1.7 起 SessionHandle 形状——
+ * open(id, access) → 句柄；read() → { events }；close() 幂等。旧 prepare(id)→{session}
+ * 已随 0.1.3+ 的生命周期重构移除。 */
 interface SessionPersistenceLike {
-  prepare(id: string, signal?: AbortSignal): Promise<{ session: SessionLike }>
+  open(id: string, access: 'read' | 'write', options?: { signal?: AbortSignal }): Promise<{
+    read(offset?: number, length?: number, options?: { signal?: AbortSignal }): Promise<{ events: readonly unknown[] }>
+    close(): Promise<void>
+  }>
 }
 
 /** 内核 dsh-llm 服务（loose 视图：记忆两阶段一次性调用）。 */
@@ -961,14 +966,22 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
         c.logger.info(`loom-runtime: 会话 ${sessionId} 已从持久化恢复（agent ${record.agentId}）`)
         return entry
       }
-      // fork/child：只读回放（不挂 agent——不能 followup）。
+      // fork/child：只读回放（不挂 agent——不能 followup）。0.1.7 SessionHandle：
+      // open('read') → read() 取事件批 → 轻量只读视图（sessionEventsOf 收口兼容）。
       const persistence = c.get?.('sessionPersistence')
       if (persistence === undefined) return undefined
-      const prepared = await persistence.prepare(sessionId)
+      const handle = await persistence.open(sessionId, 'read')
+      let events: readonly unknown[]
+      try {
+        events = (await handle.read()).events
+      } finally {
+        await handle.close().catch(() => undefined)
+      }
+      const replaySession = { id: sessionId, snapshotEvents: () => events } as unknown as SessionLike
       const entry: OwnedSession = {
-        session: prepared.session,
+        session: replaySession,
         agentId: record.agentId,
-        callIndex: rebuildCallIndex(prepared.session),
+        callIndex: rebuildCallIndex(replaySession),
         forked: kind === 'fork',
         child: kind === 'child',
         // M15：父子链恢复（sidecar 持久化后重启仍可解析会话树根）。
@@ -1003,7 +1016,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
       messages: [
         createUserMessage({
           content: [{ type: 'text', text: userText }],
-          source: { kind: 'plugin', plugin: 'loom-memory' },
+          source: { kind: 'runtime-context', form: 'recall' } as never,
         }),
       ],
       system,
@@ -1169,7 +1182,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
           if (message === undefined) return
           entry.agent!.inject(message)
           pendingPathReverify.set(sessionId, { pathIds: hits.map(hit => hit.id), userId: record.userId, atSeq })
-          const text = (message.content as Array<{ text?: string }>)[0]?.text ?? ''
+          const text = (message.content[0] as unknown as { text?: string } | undefined)?.text ?? ''
           pushSse(sessionId, {
             type: 'loom/path-recall',
             sessionId,

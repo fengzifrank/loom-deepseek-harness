@@ -212,7 +212,7 @@ export const DEFAULT_API_PREFIX = '/~loom'
 /** 默认监听端口。 */
 export const DEFAULT_PORT = 4620
 /** 默认模型路由。 */
-export const DEFAULT_MODEL = 'deepseek-v4-flash'
+export const DEFAULT_MODEL = 'deepseek-flash'
 
 /**
  * 声明一个 Loom 应用。收集 tool/agent/projection/policy 声明，

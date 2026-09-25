@@ -89,7 +89,7 @@ describe.skipIf(!sdkBuilt())('M7 loom memory e2e（植入召回 + 隔离）', ()
     const deadline = Date.now() + 20_000
     for (;;) {
       const log = sessionLogText(loom!.outDir, sessionId)
-      if (log.includes('"plugin":"loom-memory"') && log.includes('"form":"recall"')) break
+      if (log.includes('"kind":"runtime-context"') && log.includes('"form":"recall"')) break
       if (Date.now() > deadline) {
         throw new Error(`未在会话日志找到 loom-memory recall 注入；日志片段：${log.slice(0, 400)}`)
       }
@@ -239,7 +239,7 @@ describe.skipIf(!hasKey || !sdkBuilt())('M7 loom memory 闭环 e2e（带 key：�
 
     // 日志证据：该会话收到 form:'recall' 的 loom-memory 注入。
     const log = sessionLogText(loom!.outDir, sessionId)
-    expect(log).toContain('"plugin":"loom-memory"')
+    expect(log).toContain('"kind":"runtime-context"')
     expect(log).toContain('"form":"recall"')
     expect(log).toContain('万亩')
     sse.close()

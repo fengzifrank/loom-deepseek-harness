@@ -318,7 +318,7 @@ export function buildRecallMessage(entries: readonly MemoryRecord[], topK: numbe
   if (text === '') return undefined
   return createUserMessage({
     content: [{ type: 'text', text }],
-    source: { kind: 'plugin', plugin: 'loom-memory', form: 'recall' },
+    source: { kind: 'runtime-context', form: 'recall' } as never,
   })
 }
 
@@ -365,6 +365,6 @@ export function buildPathRecallMessage(entries: readonly MemoryRecord[], topK: n
   if (text === '') return undefined
   return createUserMessage({
     content: [{ type: 'text', text }],
-    source: { kind: 'plugin', plugin: 'loom-memory', form: 'recall' },
+    source: { kind: 'runtime-context', form: 'recall' } as never,
   })
 }
