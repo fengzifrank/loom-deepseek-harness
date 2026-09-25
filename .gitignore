@@ -21,3 +21,4 @@ __pycache__/
 # 日志与杂项
 *.log
 驾驭工程.pdf
+ci-logs*/

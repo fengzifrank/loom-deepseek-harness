@@ -47,6 +47,11 @@
   （text 块平铺）且 isError 升到 message 层；旧 v2 是外层块内嵌 content——
   projection/eval 双兼容
 - ContentBlock 转型、嵌套对象显式 additionalProperties（swarm 工具已满足）
+- **注入后主动 flush（CI 专项）**：0.1.7 jsonl 持久化按批写入——recall/路径注入
+  splice 在无 key 快速失败路径下滞留批队列（Linux 批处理窗口实测 20s 不落盘；
+  Windows win32 write-through 立即发布，故本地过而 CI 红）。修法：运行时在
+  agent.inject 后调 sessionPersistence.flush() 再返回 200——注入是「模型可见⟺
+  落日志」不变式的一部分，不该被调度窗口扣住
 
 ### 4. 会话格式 v2→v4（两代，自动迁移）
 - 新日志 `session.v4.jsonl`；事件信封新增 `surfaceOp`/`sourceEventSeqs`；

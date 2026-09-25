@@ -211,6 +211,8 @@ interface SessionPersistenceLike {
     read(offset?: number, length?: number, options?: { signal?: AbortSignal }): Promise<{ events: readonly unknown[] }>
     close(): Promise<void>
   }>
+  /** 0.1.7：刷全部写句柄（注入 splice 的持久化不被批处理窗口扣住）。 */
+  flush(): Promise<void>
 }
 
 /** 内核 dsh-llm 服务（loose 视图：记忆两阶段一次性调用）。 */
@@ -1181,6 +1183,7 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
           const message = buildPathRecallMessage(hits, PATH_RECALL_TOP_K)
           if (message === undefined) return
           entry.agent!.inject(message)
+          await c.get?.('sessionPersistence')?.flush().catch(() => undefined)
           pendingPathReverify.set(sessionId, { pathIds: hits.map(hit => hit.id), userId: record.userId, atSeq })
           const text = (message.content[0] as unknown as { text?: string } | undefined)?.text ?? ''
           pushSse(sessionId, {
@@ -1625,7 +1628,11 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
               const recallMessage = buildRecallMessage(hits, recallTopK)
               if (recallMessage !== undefined) {
                 entry.agent.inject(recallMessage)
-                c.logger.info(`loom memory: 会话 ${sessionId} 召回注入 ${hits.length} 条（user ${indexRecord.userId}）`)
+                // 0.1.7 持久化按批写入：无 key 等快速失败路径下 splice 会滞留批队列
+                //（Linux 批处理窗口实测 20s 不落盘；Windows write-through 立即发布）。
+                // 注入是"模型可见⟺落日志"不变式的一部分——主动 flush 后再返回 200。
+                await c.get?.('sessionPersistence')?.flush().catch(() => undefined)
+                c.logger.info(`loom memory: 会话 ${sessionId} 召回注入 ${hits.length} 条（user ${indexRecord.userId}；已 flush）`)
               }
             }
           }
