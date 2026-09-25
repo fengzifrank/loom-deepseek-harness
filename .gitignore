@@ -22,3 +22,4 @@ __pycache__/
 *.log
 驾驭工程.pdf
 ci-logs*/
+ci21*

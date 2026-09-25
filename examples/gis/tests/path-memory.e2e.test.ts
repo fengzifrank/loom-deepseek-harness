@@ -22,7 +22,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { MemoryStore, toolSequenceSignature } from '@loom-sdk/web'
-import { bootLoom, cleanupDir, ensureTsx, GIS_DIR, openEventStream, readEnv, sdkBuilt, type BootedLoom } from './helpers.js'
+import { readEventRange, bootLoom, cleanupDir, ensureTsx, GIS_DIR, openEventStream, readEnv, sdkBuilt, type BootedLoom } from './helpers.js'
 
 const env = readEnv(GIS_DIR)
 const REAL_KEY = process.env.DEEPSEEK_API_KEY ?? env.DEEPSEEK_API_KEY
@@ -151,14 +151,21 @@ describe.skipIf(!sdkBuilt())('M8 path memory e2e（失败触发注入 + 重验�
     expect(store!.get(pathId)!.active).toBe(true) // 0.4 ≥ 0.3 不软删
 
     // 日志证据：form:'recall' 注入 + 待重验框文案 + 种子内容。
+    // 双通道证据：磁盘批处理窗口（CI/Linux 无 key 路径）可能迟滞——events API
+    // （内存会话）是同一事实源的即时视图，任一通道命中即算注入成立。
     const deadline = Date.now() + 20_000
+    let log = ''
     for (;;) {
-      const log = sessionLogText(loom!.outDir, sessionId)
+      log = sessionLogText(loom!.outDir, sessionId)
       if (log.includes('"form":"recall"') && log.includes('待重验路径')) break
+      try {
+        const probe = await readEventRange(loom!.base, sessionId, -1, 1_000_000_000)
+        const raw = JSON.stringify(probe)
+        if (raw.includes('"form":"recall"') && raw.includes('待重验路径')) { log = raw; break }
+      } catch { /* events 读取失败不阻断磁盘轮询 */ }
       if (Date.now() > deadline) throw new Error(`未在会话日志找到待重验路径注入；片段：${log.slice(0, 400)}`)
       await new Promise(resolve => setTimeout(resolve, 300))
     }
-    const log = sessionLogText(loom!.outDir, sessionId)
     expect(log).toContain('"kind":"runtime-context"')
     expect(log).toContain('gis_query_land_types')
     sse.close()

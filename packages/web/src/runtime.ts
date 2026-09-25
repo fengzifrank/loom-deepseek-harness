@@ -1632,6 +1632,15 @@ export async function apply(ctx: Context, config: RuntimeConfig): Promise<void> 
                 //（Linux 批处理窗口实测 20s 不落盘；Windows write-through 立即发布）。
                 // 注入是"模型可见⟺落日志"不变式的一部分——主动 flush 后再返回 200。
                 await c.get?.('sessionPersistence')?.flush().catch(() => undefined)
+                // 可观测面（对齐 M8 loom/path-recall 模式）：注入本体是 plugin 源
+                // user/message，SSE 白名单投影会滤掉——补一条合成事件供前端/测试观测。
+                pushSse(sessionId, {
+                  type: 'loom/memory-recall',
+                  sessionId,
+                  count: hits.length,
+                  userId: indexRecord.userId,
+                  preview: truncate(recallMessage.content.map(block => textOfBlocks([block])).join(''), 200),
+                })
                 c.logger.info(`loom memory: 会话 ${sessionId} 召回注入 ${hits.length} 条（user ${indexRecord.userId}；已 flush）`)
               }
             }
