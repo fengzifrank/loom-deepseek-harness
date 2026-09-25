@@ -1,6 +1,6 @@
 # Loom 状态与路线图（status.zh.md）
 
-> 状态总览与里程碑详情。当前一句话：**M1-M16 全量交付（harness 0.1.7-rc.2），测试全绿，已开源。**
+> 状态总览与里程碑详情。当前一句话：**M1-M16 全量交付（harness 0.1.7-rc.2，448 测试含 MiniMax-M3 真实端点发布验收），测试全绿，已开源。**
 
 ## 状态总览
 
@@ -36,6 +36,7 @@
 | **Harness 0.1.2 迁移**：全仓 @deepseek-ai/* 0.1.1-rc.1 → **0.1.2-rc.1**（183 包）+ cordis 4.0.2 + schemastery 3.18.2——peer 依赖闭包（dsh-agent/jobs/sandbox 等 ~35 包显式声明）、`Session.events`→`snapshotEvents()` 单一收口适配（7 处）、组合加 session-projection 行（0.1.2 强制 peer 服务）、`z<RuntimeConfig>` 类型标注（peer 优化后 TS2742）；**解锁 per-agent provider**（`app.agent(id, { provider })`，0.1.2 AgentOptions 原生支持，声明期路由校验 + 模型目录自动并入，双路由 mock e2e 实证）；0.1.3-alpha 的 SessionHandle 破坏性变更暂不追——踩坑全程见 [docs/harness-0.1.2-migration.zh.md](docs/harness-0.1.2-migration.zh.md) | M14 | ✅ |
 | **群体智能（Swarm）**：`app.swarm(name, { entry, topology, members, memory, depth })` 一个声明拉起协作群体——声明期展开为 entry agent + member subagents（visibleTo 按拓扑计算：hierarchical 单层 / mesh 入口+同伴对等），compose 零改动；**群体记忆**（会话树命名空间：`swarm:{rootSessionId}` 合成 userId 零 schema 复用 MemoryStore 全部 FTS/隔离，swarm_note/swarm_recall 两工具 + 编译期 persona 纪律注入）；**mesh 深度 2 对等委派**（内核 maxDepth 解锁——委派工具全局注册调用者感知，子会话经 childSpec 识别身份，深度帽内核单调硬终止防环）；父子会话链持久化（sidecar parentSessionId，重启后会话树根解析仍成立）。设计出处：ruflo 概念层移植（拓扑图 + 命名空间共享记忆），共识/守护进程等明确拒绝——见 [docs/swarm.zh.md](docs/swarm.zh.md)；e2e 三段实证：health 元数据（无 key）/ 兄弟记忆传递（researcher 记 1200 亩笔记 → writer 检索命中同条）/ mesh 深度 2（researcher 自己委派 writer，第二级 started 的 parent=researcher 子会话） | M15 | ✅ |
 | **Harness 0.1.7-rc.2 迁移**：全仓 @deepseek-ai/* 0.1.2-rc.1 → **0.1.7-rc.2**（272 包，跨五个 minor 线）+ cordis 4.0.4 + schemastery 3.18.4——**对 Loom 应用开发者升级影响为零**（声明式 API 零变化，默认模型更替 deepseek-flash，存量会话自动迁移且原文件保留）。适配实录：组合层 llm-deepseek 换 host 插件包 dsh-llm-deepseek-api-key + api-extensions 前置行 + mcp-resources 前置行；持久化 API 重构（prepare→SessionHandle open/read，fork/child 回放轻量视图）；消息 source 词表迁移（plugin kind 移除→官方 runtime-context kind，实测自定义 kind 落盘被拒）；fork 语义放宽（turn 中间分叉合成 forked 收尾器，不再 OPEN_TURN 400）；tool/result v4 平铺块双形状兼容；会话格式 v2→v4 自动迁移（resume e2e 实证）——详见 [docs/harness-0.1.7-migration.zh.md](docs/harness-0.1.7-migration.zh.md)；全量 411 测试绿（与 0.1.2 基线持平，零回归）+ 冷启动就绪 | M16 | ✅ |
+| **发布验收（MiniMax-M3 真实端点）**：全接口 e2e 用本地 MiniMax API key 驱动——14 条覆盖全部对外接口（health 全元数据含 minimax 路由/策略/预算/swarms/auth/memory、agents 清单、openapi.json、projections、.http() 工具面、SSE 全生命周期含载荷必需字段、审批门策略配置验证、fork、approvals 400/404、认证 register/login/me/401、memories、webhook HMAC、群体智能委派+记忆传递、404 不泄露+CORS）；全仓 448 测试全绿（含 DeepSeek 真实模型链 + MiniMax 真实端点 + semantica 四证据链 + swarm 三段） | Release | ✅ |
 | ACP 通道接入等后续演进 | Next | ⏳ |
 
 

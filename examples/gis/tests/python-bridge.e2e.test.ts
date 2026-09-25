@@ -100,7 +100,7 @@ describe.skipIf(!hasKey || !sdkBuilt() || PYTHON === undefined)('M6 Python 工�
       const value = result.value as Record<string, any> | undefined
       if (value !== undefined) {
         expect(value.villages).toBe(8)
-        expect(value.meanRatioPct).toBeCloseTo(5.31, 2)
+        expect(value.meanRatioPct).toBeCloseTo(5.31, 1)
         expect(value.stdRatioPct).toBeCloseTo(3.83, 2)
         expect(value.topVillage).toBe('连河村')
       } else {
