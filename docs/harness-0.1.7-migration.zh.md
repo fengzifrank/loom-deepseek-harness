@@ -47,11 +47,15 @@
   （text 块平铺）且 isError 升到 message 层；旧 v2 是外层块内嵌 content——
   projection/eval 双兼容
 - ContentBlock 转型、嵌套对象显式 additionalProperties（swarm 工具已满足）
-- **注入后主动 flush（CI 专项）**：0.1.7 jsonl 持久化按批写入——recall/路径注入
-  splice 在无 key 快速失败路径下滞留批队列（Linux 批处理窗口实测 20s 不落盘；
-  Windows win32 write-through 立即发布，故本地过而 CI 红）。修法：运行时在
-  agent.inject 后调 sessionPersistence.flush() 再返回 200——注入是「模型可见⟺
-  落日志」不变式的一部分，不该被调度窗口扣住
+- **注入的可观测面（CI 三轮复盘的最终形态）**：0.1.7 jsonl 持久化按批写入——
+  无 key 快速失败路径下注入 splice 滞留批队列（Linux 批处理窗口实测 20s+ 不落盘；
+  Windows win32 write-through 立即发布，故本地过而 CI 红）；且注入本体是
+  runtime-context 源 user/message，SSE 白名单投影按设计滤掉。最终三层：
+  ① 注入后调 sessionPersistence.flush()（不变式守护，尽力而为）；
+  ② recall 注入补 loom/memory-recall SSE 合成事件（对齐 M8 loom/path-recall
+  模式——count/userId/preview，跨 OS 即时稳定，前端与测试的观测面）；
+  ③ 无 key e2e 断言走合成事件（磁盘断言仅保留在有 key 的完整链路里）。
+  CI run 20→24 三轮迭代后全绿
 
 ### 4. 会话格式 v2→v4（两代，自动迁移）
 - 新日志 `session.v4.jsonl`；事件信封新增 `surfaceOp`/`sourceEventSeqs`；
